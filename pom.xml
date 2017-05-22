@@ -26,8 +26,8 @@
     <jenkins-test-harness.version>2.1</jenkins-test-harness.version>
   </properties>
 
-  <name>TODO Plugin</name>
-  <description>TODO</description>
+  <name>Pyenv Pipeline Plugin</name>
+  <description>Exposes withPyEnv step in Jenkins Pipeline DSL</description>
   <url>https://wiki.jenkins-ci.org/display/JENKINS/TODO+Plugin</url>
 
   <!-- The default licence for Jenkins OSS Plugins is MIT. Substitute for the applicable one if needed. -->
