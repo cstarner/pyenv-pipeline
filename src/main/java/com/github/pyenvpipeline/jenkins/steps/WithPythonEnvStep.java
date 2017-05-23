@@ -1,18 +1,11 @@
 package com.github.pyenvpipeline.jenkins.steps;
-import com.google.common.base.Function;
 import com.google.common.collect.ImmutableSet;
 import hudson.*;
-import hudson.model.TaskListener;
 import hudson.util.ArgumentListBuilder;
-import org.apache.tools.ant.taskdefs.Parallel;
-import org.jenkinsci.plugins.durabletask.DurableTask;
 import org.jenkinsci.plugins.workflow.steps.*;
-import org.jenkinsci.plugins.workflow.steps.durable_task.DurableTaskStep;
 import org.kohsuke.stapler.DataBoundConstructor;
-
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-import java.io.PrintStream;
+import java.io.IOException;
 import java.io.Serializable;
 import java.util.Set;
 
@@ -20,7 +13,6 @@ public class WithPythonEnvStep extends Step implements Serializable{
 
     private String pythonVersion;
     private static final String DEFAULT_DIR_PREFIX = ".pyenv";
-
 
     @DataBoundConstructor
     public WithPythonEnvStep(String pythonVersion){
@@ -84,21 +76,11 @@ public class WithPythonEnvStep extends Step implements Serializable{
                 createPythonEnv(context);
             }
 
-            // Create a merged LauncherDecorator, add it to the BodyInvoker, and run the code block
-
-            WithPythonEnvLauncherDecorator launcherDecorator = new WithPythonEnvLauncherDecorator(step.getCommandPrefix(context), step.getPythonVersion());
-            LauncherDecorator merged = BodyInvoker.mergeLauncherDecorators(context.get(LauncherDecorator.class), launcherDecorator);
-
-           PrintStream logger = context.get(TaskListener.class).getLogger();
-
             body = context.newBodyInvoker().
-                    withContext(merged).
+                    withContext(EnvironmentExpander.merge(context.get(EnvironmentExpander.class),
+                            new ExpanderImpl(step.getCommandPrefix(context)))).
                     withCallback(BodyExecutionCallback.wrap(getContext())).
                     start();
-
-            for (StepExecution stepExecution : body.getCurrentExecutions()) {
-                logger.println(stepExecution.getClass().getCanonicalName());
-            }
 
             return false;
         }
@@ -108,6 +90,21 @@ public class WithPythonEnvStep extends Step implements Serializable{
             if (body != null ){
                 body.cancel();
             }
+        }
+    }
+
+    private static class ExpanderImpl extends EnvironmentExpander {
+
+        private String venvCommand;
+
+        public ExpanderImpl(String venvCommand){
+            super();
+            this.venvCommand = venvCommand;
+        }
+
+        @Override
+        public void expand(@Nonnull EnvVars envVars) throws IOException, InterruptedException {
+            envVars.put(PyEnvConstants.ENV_VAR_KEY, venvCommand);
         }
     }
 
@@ -126,7 +123,7 @@ public class WithPythonEnvStep extends Step implements Serializable{
 
         @Override
         public Set<? extends Class<?>> getRequiredContext() {
-            return ImmutableSet.of(TaskListener.class, FilePath.class, Launcher.class, EnvVars.class);
+            return ImmutableSet.of(EnvVars.class, Launcher.class);
         }
     }
 }
