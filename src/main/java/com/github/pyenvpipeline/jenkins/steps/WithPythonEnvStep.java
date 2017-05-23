@@ -1,12 +1,18 @@
 package com.github.pyenvpipeline.jenkins.steps;
+import com.google.common.base.Function;
 import com.google.common.collect.ImmutableSet;
 import hudson.*;
 import hudson.model.TaskListener;
 import hudson.util.ArgumentListBuilder;
+import org.apache.tools.ant.taskdefs.Parallel;
+import org.jenkinsci.plugins.durabletask.DurableTask;
 import org.jenkinsci.plugins.workflow.steps.*;
+import org.jenkinsci.plugins.workflow.steps.durable_task.DurableTaskStep;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+import java.io.PrintStream;
 import java.io.Serializable;
 import java.util.Set;
 
@@ -26,7 +32,7 @@ public class WithPythonEnvStep extends Step implements Serializable{
     }
 
     public String getCommandPrefix(StepContext stepContext) throws Exception {
-        return "source "+getFullyQualifiedPythonEnvDirectoryName(stepContext) + "/bin/activate && ";
+        return ". "+getFullyQualifiedPythonEnvDirectoryName(stepContext) + "/bin/activate; ";
     }
 
     public String getRelativePythonEnvDirectory(){
@@ -48,6 +54,7 @@ public class WithPythonEnvStep extends Step implements Serializable{
     private static class Execution extends StepExecution {
 
         private final WithPythonEnvStep step;
+        private BodyExecution body;
 
         protected Execution(final WithPythonEnvStep step, final StepContext context){
             super(context);
@@ -82,16 +89,25 @@ public class WithPythonEnvStep extends Step implements Serializable{
             WithPythonEnvLauncherDecorator launcherDecorator = new WithPythonEnvLauncherDecorator(step.getCommandPrefix(context), step.getPythonVersion());
             LauncherDecorator merged = BodyInvoker.mergeLauncherDecorators(context.get(LauncherDecorator.class), launcherDecorator);
 
-            context.newBodyInvoker().
+           PrintStream logger = context.get(TaskListener.class).getLogger();
+
+            body = context.newBodyInvoker().
                     withContext(merged).
                     withCallback(BodyExecutionCallback.wrap(getContext())).
                     start();
+
+            for (StepExecution stepExecution : body.getCurrentExecutions()) {
+                logger.println(stepExecution.getClass().getCanonicalName());
+            }
+
             return false;
         }
 
         @Override
         public void stop(@Nonnull Throwable throwable) throws Exception {
-
+            if (body != null ){
+                body.cancel();
+            }
         }
     }
 

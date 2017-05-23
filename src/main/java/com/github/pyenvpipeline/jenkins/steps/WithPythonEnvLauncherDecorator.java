@@ -35,10 +35,10 @@ public class WithPythonEnvLauncherDecorator extends LauncherDecorator implements
                 PrintStream logger = taskListener.getLogger();
                 logger.println("Switching Commands to "+pythonVersion);
 
-                List<String> commands = procStarter.cmds();
-                String firstCommand = commandPrefix + commands.get(0);
-                commands.set(0, firstCommand);
-                procStarter.cmds(commands);
+                //List<String> commands = procStarter.cmds();
+                //String firstCommand = commandPrefix + commands.get(0);
+                //commands.set(0, firstCommand);
+                //procStarter.cmds(commands);
 
                 return base.launch(procStarter);
             }
