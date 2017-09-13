@@ -25,58 +25,38 @@
 
 package com.github.pyenvpipeline.jenkins.steps;
 
-import hudson.Extension;
+import hudson.EnvVars;
+import hudson.model.TaskListener;
 import hudson.util.ArgumentListBuilder;
-import org.jenkinsci.plugins.durabletask.BourneShellScript;
-import org.jenkinsci.plugins.durabletask.DurableTask;
+import org.jenkinsci.plugins.workflow.steps.StepContext;
+import org.jenkinsci.plugins.workflow.steps.StepExecution;
 import org.jenkinsci.plugins.workflow.steps.durable_task.DurableTaskStep;
-import org.kohsuke.stapler.DataBoundConstructor;
 
+import java.io.Serializable;
 
-public class PyEnvShellStep extends PyEnvDurableTaskBase {
+public abstract class PyEnvDurableTaskBase extends DurableTaskStep implements Serializable {
 
-    private final String script;
-
-    @Override
-    public ArgumentListBuilder getArgumentList(String directoryName) {
-
-        if (!directoryName.endsWith("/")) {
-            directoryName += "/";
-        }
-
-        String commandLocation = directoryName + "bin/activate";
-
-        ArgumentListBuilder argumentListBuilder = new ArgumentListBuilder();
-        argumentListBuilder.add(".");
-        argumentListBuilder.add(commandLocation);
-        argumentListBuilder.add(script);
-
-        return argumentListBuilder;
-    }
-
-    @DataBoundConstructor public PyEnvShellStep(String script) {
-        if (script==null)
-            throw new IllegalArgumentException();
-        this.script = script;
-    }
+    private String script;
 
     public String getScript() {
         return script;
     }
-    @Override protected DurableTask task() {
 
-        return new BourneShellScript(getScript());
-    }
+    public abstract ArgumentListBuilder getArgumentList(String directoryName);
 
-    @Extension
-    public static final class DescriptorImpl extends DurableTaskStep.DurableTaskStepDescriptor {
-
-        @Override public String getDisplayName() {
-            return "PyEnvVar Shell Script";
+    @Override public StepExecution start(StepContext context) throws Exception {
+        String path = context.get(EnvVars.class).get("PATH");
+        if (path != null && path.contains("$PATH")) {
+            context.get(TaskListener.class).getLogger().println("Warning: JENKINS-41339 probably bogus PATH=" + path + "; perhaps you meant to use ‘PATH+EXTRA=/something/bin’?");
         }
 
-        @Override public String getFunctionName() {
-                return "pysh";
-            }
+        String absoluteDirectoryName = context.get(EnvVars.class).get(PyEnvConstants.VIRTUALENV_LOCATION_ENV_VAR_KEY);
+
+        if (absoluteDirectoryName != null) {
+            ArgumentListBuilder argumentListBuilder = getArgumentList(absoluteDirectoryName);
+            this.script = argumentListBuilder.toStringWithQuote();
+        }
+
+        return super.start(context);
     }
 }

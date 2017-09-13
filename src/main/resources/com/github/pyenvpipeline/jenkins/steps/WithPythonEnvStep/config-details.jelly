@@ -23,8 +23,7 @@
   ~ THE SOFTWARE.
   ~
   -->
-
 <?jelly escape-by-default='true'?>
-<div>
-  Allows a Durable Task (sh or bat) to be executed within a Python virtualenv
-</div>
+<j:jelly xmlns:j="jelly:core" xmlns:f="/lib/form">
+    <f:block>No snippet generation supported. See inline help for usage.</f:block>
+</j:jelly>

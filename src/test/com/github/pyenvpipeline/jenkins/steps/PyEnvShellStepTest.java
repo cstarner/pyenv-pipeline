@@ -25,8 +25,17 @@
 
 package com.github.pyenvpipeline.jenkins.steps;
 
-final class PyEnvConstants {
-    static final String VIRTUALENV_LOCATION_ENV_VAR_KEY="PYENVPIPELINE_VIRTUALENV";
-    static final String VIRTUALENV_RELATIVE_DIRECTORY_NAME_ENV_VAR_KEY="PYENVPIPELINE_VIRTUALENV_RELATIVE_DIRECTORY";
-    static final String[] VALID_TOOL_DESCRIPTOR_IDS = {"jenkins.plugins.shiningpanda.tools.PythonInstallation"};
+import hudson.util.ArgumentListBuilder;
+import org.junit.Assert;
+import org.junit.Test;
+
+public class PyEnvShellStepTest {
+
+    @Test
+    public void testGetArgumentList() throws Exception {
+        PyEnvShellStep shellStep = new PyEnvShellStep("python --version");
+        ArgumentListBuilder argumentListBuilder = shellStep.getArgumentList("/home/username/.pyenv-python2.7/");
+        String commandString = argumentListBuilder.toStringWithQuote();
+        Assert.assertEquals(". /home/username/.pyenv-python2.7/bin/activate \"python --version\"", commandString);
+    }
 }

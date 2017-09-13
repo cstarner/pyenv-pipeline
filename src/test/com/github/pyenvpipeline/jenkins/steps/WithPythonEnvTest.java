@@ -25,8 +25,23 @@
 
 package com.github.pyenvpipeline.jenkins.steps;
 
-final class PyEnvConstants {
-    static final String VIRTUALENV_LOCATION_ENV_VAR_KEY="PYENVPIPELINE_VIRTUALENV";
-    static final String VIRTUALENV_RELATIVE_DIRECTORY_NAME_ENV_VAR_KEY="PYENVPIPELINE_VIRTUALENV_RELATIVE_DIRECTORY";
-    static final String[] VALID_TOOL_DESCRIPTOR_IDS = {"jenkins.plugins.shiningpanda.tools.PythonInstallation"};
+import org.junit.Assert;
+import org.junit.Test;
+
+public class WithPythonEnvTest {
+
+    @Test
+    public void testGetBaseDirectory() {
+        WithPythonEnvStep windowsStep = new WithPythonEnvStep("C:\\Foo\\Bar\\python3");
+        Assert.assertEquals(".pyenv-Foo-Bar-python3", windowsStep.getRelativePythonEnvDirectory());
+
+        WithPythonEnvStep unixStep = new WithPythonEnvStep("/foo/bar/blah/python");
+        Assert.assertEquals(".pyenv-foo-bar-blah-python", unixStep.getRelativePythonEnvDirectory());
+
+        unixStep = new WithPythonEnvStep("foo/bar/blah/python");
+        Assert.assertEquals(".pyenv-foo-bar-blah-python", unixStep.getRelativePythonEnvDirectory());
+
+        WithPythonEnvStep rawStep = new WithPythonEnvStep("python3");
+        Assert.assertEquals(".pyenv-python3", rawStep.getRelativePythonEnvDirectory());
+    }
 }
