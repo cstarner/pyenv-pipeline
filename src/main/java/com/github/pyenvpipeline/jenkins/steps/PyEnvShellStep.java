@@ -26,16 +26,29 @@
 package com.github.pyenvpipeline.jenkins.steps;
 
 import hudson.Extension;
+import hudson.model.TaskListener;
 import hudson.util.ArgumentListBuilder;
+import hudson.util.LogTaskListener;
 import org.jenkinsci.plugins.durabletask.BourneShellScript;
 import org.jenkinsci.plugins.durabletask.DurableTask;
+import org.jenkinsci.plugins.workflow.steps.StepContext;
 import org.jenkinsci.plugins.workflow.steps.durable_task.DurableTaskStep;
 import org.kohsuke.stapler.DataBoundConstructor;
+
+import java.io.PrintStream;
+import java.util.logging.Level;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 
 public class PyEnvShellStep extends PyEnvDurableTaskBase {
 
     private final String script;
+
+    @Override
+    protected DurableTask getDurableTask(String fullScript) {
+        return new BourneShellScript(fullScript);
+    }
 
     @Override
     public ArgumentListBuilder getArgumentList(String directoryName) {
@@ -44,12 +57,15 @@ public class PyEnvShellStep extends PyEnvDurableTaskBase {
             directoryName += "/";
         }
 
-        String commandLocation = directoryName + "bin/activate";
+        String commandLocation = directoryName + "bin/activate;";
 
         ArgumentListBuilder argumentListBuilder = new ArgumentListBuilder();
         argumentListBuilder.add(".");
         argumentListBuilder.add(commandLocation);
-        argumentListBuilder.add(script);
+
+        for (String s : splitWhileRespectingQuotes(script)) {
+            argumentListBuilder.add(s);
+        }
 
         return argumentListBuilder;
     }
@@ -62,10 +78,6 @@ public class PyEnvShellStep extends PyEnvDurableTaskBase {
 
     public String getScript() {
         return script;
-    }
-    @Override protected DurableTask task() {
-
-        return new BourneShellScript(getScript());
     }
 
     @Extension

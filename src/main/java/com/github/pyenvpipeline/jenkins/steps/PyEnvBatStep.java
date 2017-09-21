@@ -9,8 +9,12 @@ import org.kohsuke.stapler.DataBoundConstructor;
 
 
 public class PyEnvBatStep extends PyEnvDurableTaskBase {
-
     private final String script;
+
+    @Override
+    protected DurableTask getDurableTask(String fullScript) {
+        return new WindowsBatchScript(fullScript);
+    }
 
     @Override
     public ArgumentListBuilder getArgumentList(String directoryName) {
@@ -18,9 +22,13 @@ public class PyEnvBatStep extends PyEnvDurableTaskBase {
         String commandLocation = directoryName + "\\Scripts\\activate";
 
         ArgumentListBuilder argumentListBuilder = new ArgumentListBuilder();
+        argumentListBuilder.add("@call");
         argumentListBuilder.add(commandLocation);
-        argumentListBuilder.add("&&");
-        argumentListBuilder.add(script);
+        argumentListBuilder.add("\r\n");
+
+        for (String s : splitWhileRespectingQuotes(script)) {
+            argumentListBuilder.add(s);
+        }
 
         return argumentListBuilder;
     }
@@ -33,10 +41,6 @@ public class PyEnvBatStep extends PyEnvDurableTaskBase {
 
     public String getScript() {
         return script;
-    }
-
-    @Override protected DurableTask task() {
-        return new WindowsBatchScript(getScript());
     }
 
     @Extension

@@ -29,7 +29,11 @@ import hudson.util.ArgumentListBuilder;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.util.logging.Logger;
+
 public class PyEnvBatStepTest {
+
+    static Logger logger = Logger.getLogger(PyEnvBatStepTest.class.getName());
 
     @Test
     public void testGetArgumentList() throws Exception {
@@ -37,6 +41,15 @@ public class PyEnvBatStepTest {
         String baseDirectoryName = "C:\\Users\\username\\Documents\\Programming\\project\\.pyenv-python2.7\\";
         ArgumentListBuilder argumentListBuilder = batStep.getArgumentList(baseDirectoryName);
         String commandString = argumentListBuilder.toStringWithQuote();
-        Assert.assertEquals(baseDirectoryName + "\\Scripts\\activate && \"python --version\"", commandString);
+        Assert.assertEquals("@call " + baseDirectoryName + "\\Scripts\\activate \r\n python --version", commandString);
+
+        // Assure that quotes are handled correctly
+        PyEnvBatStep batStepWithQuotes = new PyEnvBatStep("python -c \"import sys; import platform; " +
+                "sys.stdout.write(platform.python_version())\"");
+        argumentListBuilder = batStepWithQuotes.getArgumentList(baseDirectoryName);
+        commandString = argumentListBuilder.toStringWithQuote();
+        Assert.assertEquals("@call " + baseDirectoryName + "\\Scripts\\activate \r\n python -c " +
+                "\"import sys; import platform; sys.stdout.write(platform.python_version())\"", commandString);
+
     }
 }

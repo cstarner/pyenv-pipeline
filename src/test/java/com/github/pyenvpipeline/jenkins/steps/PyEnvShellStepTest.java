@@ -36,6 +36,15 @@ public class PyEnvShellStepTest {
         PyEnvShellStep shellStep = new PyEnvShellStep("python --version");
         ArgumentListBuilder argumentListBuilder = shellStep.getArgumentList("/home/username/.pyenv-python2.7/");
         String commandString = argumentListBuilder.toStringWithQuote();
-        Assert.assertEquals(". /home/username/.pyenv-python2.7/bin/activate \"python --version\"", commandString);
+        Assert.assertEquals(". /home/username/.pyenv-python2.7/bin/activate; python --version", commandString);
+
+        // Test that quotes in the string are handled correctly
+        PyEnvShellStep shellStepWithQuotes = new PyEnvShellStep("python -c \"import sys; import platform; " +
+                "sys.stdout.write(platform.python_version())\"");
+        argumentListBuilder = shellStepWithQuotes.getArgumentList("/home/username/.pyenv-python2.7/");
+        commandString = argumentListBuilder.toStringWithQuote();
+        Assert.assertEquals(". /home/username/.pyenv-python2.7/bin/activate; python -c " +
+                "\"import sys; import platform; sys.stdout.write(platform.python_version())\"", commandString);
+
     }
 }

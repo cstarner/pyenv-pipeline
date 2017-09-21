@@ -26,20 +26,51 @@
 package com.github.pyenvpipeline.jenkins.steps;
 
 import hudson.EnvVars;
+import hudson.Functions;
+import hudson.Launcher;
 import hudson.model.TaskListener;
 import hudson.util.ArgumentListBuilder;
+import hudson.util.LogTaskListener;
+import org.jenkinsci.plugins.durabletask.DurableTask;
 import org.jenkinsci.plugins.workflow.steps.StepContext;
 import org.jenkinsci.plugins.workflow.steps.StepExecution;
 import org.jenkinsci.plugins.workflow.steps.durable_task.DurableTaskStep;
 
+import java.io.PrintStream;
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public abstract class PyEnvDurableTaskBase extends DurableTaskStep implements Serializable {
+    private static final Logger LOGGER = Logger.getLogger(PyEnvBatStep.class.getName());
+    private DurableTask task;
 
-    private String script;
+    @Override
+    protected DurableTask task() {
+        return task;
+    }
 
-    public String getScript() {
-        return script;
+    protected void setTask(DurableTask task) {
+        this.task = task;
+    }
+
+    protected abstract DurableTask getDurableTask(String fullScript);
+
+    protected List<String> splitWhileRespectingQuotes(String script) {
+        // Helper function intended to split the input command into separate portions
+        // Splits along spaces, except in the presence of quotation marks
+        List<String> result = new ArrayList<>();
+
+        Matcher m = Pattern.compile("([^\"]\\S*|\".+?\")\\s*").matcher(script);
+        while(m.find()) {
+            result.add(m.group(1).replace("\"", ""));
+        }
+
+        return result;
     }
 
     public abstract ArgumentListBuilder getArgumentList(String directoryName);
@@ -54,9 +85,14 @@ public abstract class PyEnvDurableTaskBase extends DurableTaskStep implements Se
 
         if (absoluteDirectoryName != null) {
             ArgumentListBuilder argumentListBuilder = getArgumentList(absoluteDirectoryName);
-            this.script = argumentListBuilder.toStringWithQuote();
+            String script = argumentListBuilder.toString();
+            LOGGER.fine("Full command: " + script);
+            DurableTask task = getDurableTask(script);
+            setTask(task);
         }
 
         return super.start(context);
     }
+
+
 }

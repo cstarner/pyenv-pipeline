@@ -35,9 +35,7 @@ import org.jenkinsci.plugins.workflow.steps.*;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 import javax.annotation.Nonnull;
-import java.io.IOException;
-import java.io.PrintStream;
-import java.io.Serializable;
+import java.io.*;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
@@ -140,17 +138,17 @@ public class WithPythonEnvStep extends Step implements Serializable{
 
             if (!baseToolDirectory.equals("")) {
 
-                if (isUnix) {
-                    commandPath = baseToolDirectory + "/";
-                } else {
-                    commandPath = baseToolDirectory + "\\";
+                // ShiningPanda returns actual Python instances for Linux, but only returns folders for Windows
+                if (!isUnix) {
+                    commandPath = baseToolDirectory + "\\python";
                 }
             }
 
             if (!commandPath.contains("python")) {
                 commandPath += "python";
             }
-            logger().println("Using \"" + commandPath + "\" as python executable");
+
+            LOGGER.info("Using \"" + commandPath + "\" as python executable");
 
             ArgumentListBuilder command = new ArgumentListBuilder();
 
@@ -160,12 +158,13 @@ public class WithPythonEnvStep extends Step implements Serializable{
             command.add(fullQualifiedDirectoryName);
 
             Launcher launcher = stepContext.get(Launcher.class);
-            Launcher.ProcStarter procStarter = launcher.launch().stderr(logger());
+
+            Launcher.ProcStarter procStarter = launcher.launch();
             procStarter.cmds(command);
-            int returnCode = procStarter.join();
-            if (returnCode != 0) {
-               throw new Exception("Non-zero return code");
-            }
+            Proc proc = procStarter.start();
+
+            proc.join();
+            LOGGER.info("Created virtualenv");
         }
 
         private PrintStream logger() {
@@ -192,10 +191,7 @@ public class WithPythonEnvStep extends Step implements Serializable{
 
             boolean isUnix = context.get(Launcher.class).isUnix();
 
-            getBaseToolDirectory();
-
             String relativeDir = step.getRelativePythonEnvDirectory();
-            // Setup environment properly
 
             if (!context.get(FilePath.class).child(step.getRelativePythonEnvDirectory()).exists()) {
                 createPythonEnv(context, isUnix, relativeDir);

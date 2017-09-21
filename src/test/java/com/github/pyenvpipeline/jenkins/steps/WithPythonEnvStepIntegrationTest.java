@@ -25,6 +25,7 @@
 
 package com.github.pyenvpipeline.jenkins.steps;
 
+import hudson.Functions;
 import hudson.tools.ToolDescriptor;
 import hudson.tools.ToolInstallation;
 import jenkins.plugins.shiningpanda.tools.PythonInstallation;
@@ -32,17 +33,22 @@ import jenkins.plugins.shiningpanda.tools.PythonInstallationFinder;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
+import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.jvnet.hudson.test.JenkinsRule;
 import org.jvnet.hudson.test.LoggerRule;
 
+import java.awt.*;
 import java.util.List;
 import java.util.logging.Level;
+import java.util.regex.Pattern;
 
 import static org.junit.Assert.assertTrue;
 
 public class WithPythonEnvStepIntegrationTest {
+
+    private static final String OS_REPLACE_TARGET ="{{OS_SHELL_COMMAND}}";
 
     @Rule
     public JenkinsRule j = new JenkinsRule();
@@ -54,6 +60,14 @@ public class WithPythonEnvStepIntegrationTest {
 
     private<T extends ToolInstallation> T[] unboxToolInstallations(ToolDescriptor<T> descriptor) {
         return descriptor.getInstallations();
+    }
+
+    private String formatOSSpecificNodeScipts(String osAgnosticScript) {
+        if (Functions.isWindows()) {
+            return osAgnosticScript.replaceAll(Pattern.quote(OS_REPLACE_TARGET), "pybat");
+        } else {
+            return osAgnosticScript.replaceAll(Pattern.quote(OS_REPLACE_TARGET), "pysh");
+        }
     }
 
     @Test
@@ -88,13 +102,9 @@ public class WithPythonEnvStepIntegrationTest {
         return installation;
     }
 
-    @Test
-    public void shouldUseShiningPanda() throws Exception {
-        // Here, we dictate a single PythonInstallation to be used for the ShiningPanda test, so
-        // that we can pick the appropriate name, and verify that it is used later down the line
-        // Note that this will not work if there are no findable Python Installations on the testing
-        // system (i.e. findable via the PythonFinder class provided by the ShiningPanda plugin).
+    private PythonInstallation findFirstPythonInstallation() throws Exception{
         PythonInstallation installation = null;
+
         for (ToolDescriptor<? extends ToolInstallation> desc: ToolInstallation.all()) {
             installation = findSinglePythonInstallation(desc);
             if (installation != null) {
@@ -103,6 +113,55 @@ public class WithPythonEnvStepIntegrationTest {
                 break;
             }
         }
+
+        return installation;
+    }
+
+    @Test
+    public void ensureDurableTaskCompatibility() throws Exception {
+        // We ensure that returnStdout works by examining the lines of output from a Pipeline script that activates
+        // a withPythonEnv block, and outputs the version of the Python command that prints the version of the
+        // interpreter. If the prefix "python version: " is found in a line of the logs, and that line contains any
+        // other text after the prefix, we will know that the returnStdout optional argument works for these commands
+        // in a manner compatible with the "sh" and "bat" steps.
+
+        PythonInstallation installation = findFirstPythonInstallation();
+
+        // Python versions prior to 3.4 outputed the results of "python --version" to stderr; 3.4 and after use stdout.
+        // Additionally, we can't use print in this instance, due to statement incompatibility between Python 2 and
+        // Python 3. This is a semantically equivalent workaround that should work regardless of Python version
+        String platformInlinePythonCommand = "python -c \\\"import platform; import sys; sys.stdout.write(platform.python_version()+\\'\\\\n\\')\\\"";
+
+        WorkflowJob job = j.jenkins.createProject(WorkflowJob.class, "p");
+        String script = formatOSSpecificNodeScipts("node { withPythonEnv('" + installation.getName() + "') { def version = " +
+                OS_REPLACE_TARGET +"(script: '" + platformInlinePythonCommand + "', returnStdout: true).trim()\n" +
+                "echo \"python version: ${version}\"" +
+                "}  }");
+        job.setDefinition(new CpsFlowDefinition(script,true));
+
+        WorkflowRun run = j.assertBuildStatusSuccess(job.scheduleBuild2(0));
+
+        String logs = JenkinsRule.getLog(run);
+
+        boolean foundOutput = false;
+        String prefix = "python version: ";
+        for (String line: logs.split("\n")) {
+            if (line.startsWith(prefix)) {
+                foundOutput = !line.equals(prefix);
+                break;
+            }
+        }
+
+        Assert.assertTrue(foundOutput);
+    }
+
+    @Test
+    public void shouldUseShiningPanda() throws Exception {
+        // Here, we dictate a single PythonInstallation to be used for the ShiningPanda test, so
+        // that we can pick the appropriate name, and verify that it is used later down the line
+        // Note that this will not work if there are no findable Python Installations on the testing
+        // system (i.e. findable via the PythonFinder class provided by the ShiningPanda plugin).
+        PythonInstallation installation = findFirstPythonInstallation();
 
         String workflowScript = "node { withPythonEnv('python3') { echo \"current virtualenv relative dir: ${" +
                 PyEnvConstants.VIRTUALENV_RELATIVE_DIRECTORY_NAME_ENV_VAR_KEY + "}\" }";
