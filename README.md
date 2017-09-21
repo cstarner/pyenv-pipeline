@@ -21,7 +21,7 @@ This plugin provides 3 new Pipeline DSL methods:
   to match it against the name of a <code>ToolInstallation</code> that
   is described by a <code>ToolDescriptor</code> with an ID that is contained
   within a pre-defined list of known Jenkins Python Tool plugin IDs. Currently,
-  this plugin only looks to see if ShiningPanda is installed. If a 
+  this plugin only looks to see if [ShiningPanda](https://github.com/jenkinsci/shiningpanda-plugin) is installed. If a 
   <code>ToolInstallation</code> is matched, the location of that tool is used
   as the Python executable to generate the virtualenv.
   
@@ -46,8 +46,9 @@ This plugin provides 3 new Pipeline DSL methods:
         ...
     }</code></pre>  
 * <code>pysh</code>: Functions as the provided <code>sh</code> Pipeline DSL
-  command, expect that if it finds the <code>PYENVPIPELINE_VIRTUALENV_RELATIVE_DIRECTORY</code
+  command, expect that if it finds the <code>PYENVPIPELINE_VIRTUALENV_RELATIVE_DIRECTORY</code>
   environmental variable, it activates the virtualenv located there prior
   to running the provided script.
+  
 * <code>pybat</code>: Works just like <code>pysh</code>, expect for Windows
   build environments
