@@ -9,24 +9,14 @@
   </parent>
   <groupId>org.jenkins-ci.plugins</groupId>
   <artifactId>pyenv-pipeline</artifactId>
-  <version>1.0.0</version>
+  <version>1.0.0-SNAPSHOT</version>
   <packaging>hpi</packaging>
-
-  <build>
-    <plugins>
-      <plugin>
-        <artifactId>maven-compiler-plugin</artifactId>
-        <configuration>
-          <source>1.8</source>
-          <target>1.8</target>
-        </configuration>
-      </plugin>
-    </plugins>
-  </build>
 
   <properties>
     <jenkins.version>1.651.2</jenkins.version>
     <jenkins-test-harness.version>2.1</jenkins-test-harness.version>
+    <maven.compiler.source>1.8</maven.compiler.source>
+    <maven.compiler.target>1.8</maven.compiler.target>
   </properties>
 
   <name>Pyenv Pipeline Plugin</name>
