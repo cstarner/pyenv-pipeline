@@ -47,8 +47,9 @@ import static com.github.pyenvpipeline.jenkins.steps.PyEnvConstants.VALID_TOOL_D
 public class WithPythonEnvStep extends Step implements Serializable{
 
     private static final Logger LOGGER = Logger.getLogger(WithPythonEnvStep.class.getName());
-    private String pythonInstallation;
     private static final String DEFAULT_DIR_PREFIX = ".pyenv";
+
+    private String pythonInstallation;
 
     @DataBoundConstructor
     public WithPythonEnvStep(String pythonInstallation){
@@ -79,6 +80,8 @@ public class WithPythonEnvStep extends Step implements Serializable{
 
     private static class Execution extends StepExecution {
 
+        private boolean usingShiningPanda;
+
         public String getFullyQualifiedPythonEnvDirectoryName(StepContext stepContext, boolean isUnix, String relativeDir) throws Exception{
             EnvVars envVars = stepContext.get(EnvVars.class);
             String workspace = envVars.get("WORKSPACE");
@@ -105,6 +108,7 @@ public class WithPythonEnvStep extends Step implements Serializable{
                         String notification = "Matched ShiningPanda tool name: " + installation.getName();
                         logger().println(notification);
                         LOGGER.info(notification);
+                        usingShiningPanda = true;
                         return installation.getHome();
                     } else {
                         LOGGER.info("Skipping ToolInstallation: "+step.getPythonInstallation());
@@ -125,30 +129,33 @@ public class WithPythonEnvStep extends Step implements Serializable{
         protected Execution(final WithPythonEnvStep step, final StepContext context){
             super(context);
             this.step = step;
+            usingShiningPanda = false;
         }
 
         private void createPythonEnv(StepContext stepContext, boolean isUnix, String relativeDir) throws Exception{
             String fullQualifiedDirectoryName = getFullyQualifiedPythonEnvDirectoryName(stepContext, isUnix, relativeDir);
             String baseToolDirectory = getBaseToolDirectory();
 
-            LOGGER.info("Creating virtualenv at " + fullQualifiedDirectoryName + " using Python installation " +
-                    "found at " + baseToolDirectory);
-
-            String commandPath = "";
+            String commandPath;
 
             if (!baseToolDirectory.equals("")) {
 
                 // ShiningPanda returns actual Python instances for Linux, but only returns folders for Windows
-                if (!isUnix) {
-                    commandPath = baseToolDirectory + "\\python";
+                if (usingShiningPanda && !isUnix) {
+                    baseToolDirectory += "\\python";
                 }
+
+                commandPath = baseToolDirectory;
+            } else {
+                commandPath = step.getPythonInstallation();
             }
 
             if (!commandPath.contains("python")) {
                 commandPath += "python";
             }
 
-            LOGGER.info("Using \"" + commandPath + "\" as python executable");
+            LOGGER.info("Creating virtualenv at " + fullQualifiedDirectoryName + " using Python installation " +
+                    "found at " + commandPath);
 
             ArgumentListBuilder command = new ArgumentListBuilder();
 

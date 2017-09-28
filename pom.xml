@@ -16,10 +16,37 @@
     <jenkins.version>1.651.2</jenkins.version>
     <jenkins-test-harness.version>2.1</jenkins-test-harness.version>
   </properties>
-
+  <issueManagement>
+    <system>GitHub</system>
+    <url>https://github.com/jenkinsci/pyenv-pipeline-plugin/issues</url>
+  </issueManagement>
   <name>Pyenv Pipeline Plugin</name>
   <description>Exposes a step in Jenkins Pipeline DSL for executing commands within a specified Python virtualenv</description>
   <url>https://wiki.jenkins.io/display/JENKINS/Pyenv+Pipeline+Plugin</url>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>se.bjurr.gitchangelog</groupId>
+        <artifactId>git-changelog-maven-plugin</artifactId>
+        <version>1.49</version>
+        <executions>
+          <execution>
+            <id>GenerateGitChangelogCommits</id>
+            <phase>generate-sources</phase>
+            <goals>
+              <goal>git-changelog</goal>
+            </goals>
+            <configuration>
+              <file>CHANGELOG.md</file>
+              <fromRef>${fromRef}</fromRef>
+              <toRef>${toRef}</toRef>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
 
   <licenses>
     <license>
@@ -40,7 +67,7 @@
     <connection>scm:git:git://github.com/jenkinsci/pyenv-pipeline-plugin.git</connection>
     <developerConnection>scm:git:git@github.com:jenkinsci/pyenv-pipeline-plugin.git</developerConnection>
     <url>https://github.com/jenkinsci/pyenv-pipeline-plugin</url>
-    <tag>pyenv-pipeline-1.0.0</tag>
+    <tag>pyenv-pipeline-1.0.1</tag>
   </scm>
   <repositories>
     <repository>
@@ -52,6 +79,11 @@
     <pluginRepository>
       <id>repo.jenkins-ci.org</id>
       <url>https://repo.jenkins-ci.org/public/</url>
+    </pluginRepository>
+    <pluginRepository>
+      <id>central</id>
+      <name>Maven Plugin Repository</name>
+      <url>http://repo1.maven.org/maven2</url>
     </pluginRepository>
   </pluginRepositories>
 
