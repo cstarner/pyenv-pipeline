@@ -38,12 +38,9 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.jvnet.hudson.test.JenkinsRule;
 import org.jvnet.hudson.test.LoggerRule;
-
-import java.awt.*;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.regex.Pattern;
-
 import static org.junit.Assert.assertTrue;
 
 public class WithPythonEnvStepIntegrationTest {
@@ -74,11 +71,11 @@ public class WithPythonEnvStepIntegrationTest {
     public void shouldSetEnvVar() throws Exception {
         // We only test the relative dir name here, since we can't easily predict the full directory name
         WorkflowJob job = j.jenkins.createProject(WorkflowJob.class, "p");
-        job.setDefinition(new CpsFlowDefinition("node { withPythonEnv('python3') { echo \"current virtualenv " +
+        job.setDefinition(new CpsFlowDefinition("node { withPythonEnv('python') { echo \"current virtualenv " +
                 "relative dir: ${" + PyEnvConstants.VIRTUALENV_RELATIVE_DIRECTORY_NAME_ENV_VAR_KEY + "}\" } }",
                 true));
         WorkflowRun run = j.assertBuildStatusSuccess(job.scheduleBuild2(0));
-        j.assertLogContains("current virtualenv relative dir: .pyenv-python3", run);
+        j.assertLogContains("current virtualenv relative dir: .pyenv-python", run);
     }
 
     private PythonInstallation findSinglePythonInstallation(ToolDescriptor descriptor) throws Exception {
@@ -163,7 +160,7 @@ public class WithPythonEnvStepIntegrationTest {
         // system (i.e. findable via the PythonFinder class provided by the ShiningPanda plugin).
         PythonInstallation installation = findFirstPythonInstallation();
 
-        String workflowScript = "node { withPythonEnv('python3') { echo \"current virtualenv relative dir: ${" +
+        String workflowScript = "node { withPythonEnv('python') { echo \"current virtualenv relative dir: ${" +
                 PyEnvConstants.VIRTUALENV_RELATIVE_DIRECTORY_NAME_ENV_VAR_KEY + "}\" }";
 
         if (installation!=null) {
