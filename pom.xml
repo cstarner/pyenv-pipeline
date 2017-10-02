@@ -9,7 +9,7 @@
   </parent>
   <groupId>org.jenkins-ci.plugins</groupId>
   <artifactId>pyenv-pipeline</artifactId>
-  <version>1.0.2</version>
+  <version>1.0.3-SNAPSHOT</version>
   <packaging>hpi</packaging>
 
   <properties>
@@ -43,7 +43,7 @@
     <connection>scm:git:git://github.com/jenkinsci/pyenv-pipeline-plugin.git</connection>
     <developerConnection>scm:git:git@github.com:jenkinsci/pyenv-pipeline-plugin.git</developerConnection>
     <url>https://github.com/jenkinsci/pyenv-pipeline-plugin</url>
-    <tag>pyenv-pipeline-1.0.2</tag>
+    <tag>pyenv-pipeline-1.0.1</tag>
   </scm>
   <repositories>
     <repository>
