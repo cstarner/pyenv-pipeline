@@ -38,12 +38,9 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.jvnet.hudson.test.JenkinsRule;
 import org.jvnet.hudson.test.LoggerRule;
-
-import java.awt.*;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.regex.Pattern;
-
 import static org.junit.Assert.assertTrue;
 
 public class WithPythonEnvStepIntegrationTest {

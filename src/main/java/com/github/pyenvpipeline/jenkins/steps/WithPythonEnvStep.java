@@ -78,7 +78,7 @@ public class WithPythonEnvStep extends Step implements Serializable{
         return DEFAULT_DIR_PREFIX + postfix;
     }
 
-    private static class Execution extends StepExecution {
+    protected static class Execution extends StepExecution {
 
         private boolean usingShiningPanda;
 
@@ -93,9 +93,9 @@ public class WithPythonEnvStep extends Step implements Serializable{
             }
         }
 
-        private String getBaseToolDirectory() {
+        private String getBaseToolDirectory(DescriptorExtensionList<ToolInstallation, ToolDescriptor<?>> descriptors) {
             List<String> validToolDescriptors = Arrays.asList(VALID_TOOL_DESCRIPTOR_IDS);
-            for (ToolDescriptor<?> desc : ToolInstallation.all()) {
+            for (ToolDescriptor<?> desc : descriptors) {
 
                 if (!validToolDescriptors.contains(desc.getId())) {
                     LOGGER.info("Skipping ToolDescriptor: "+ desc.getId());
@@ -132,9 +132,9 @@ public class WithPythonEnvStep extends Step implements Serializable{
             usingShiningPanda = false;
         }
 
-        private void createPythonEnv(StepContext stepContext, boolean isUnix, String relativeDir) throws Exception{
-            String fullQualifiedDirectoryName = getFullyQualifiedPythonEnvDirectoryName(stepContext, isUnix, relativeDir);
-            String baseToolDirectory = getBaseToolDirectory();
+        protected String getCommandPath(boolean isUnix, DescriptorExtensionList<ToolInstallation, ToolDescriptor<?>> descriptors) throws Exception {
+
+            String baseToolDirectory = getBaseToolDirectory(descriptors);
 
             String commandPath;
 
@@ -142,7 +142,12 @@ public class WithPythonEnvStep extends Step implements Serializable{
 
                 // ShiningPanda returns actual Python instances for Linux, but only returns folders for Windows
                 if (usingShiningPanda && !isUnix) {
-                    baseToolDirectory += "\\python";
+
+                    if (!baseToolDirectory.endsWith("\\")) {
+                        baseToolDirectory += "\\";
+                    }
+
+                    baseToolDirectory += "python";
                 }
 
                 commandPath = baseToolDirectory;
@@ -154,6 +159,12 @@ public class WithPythonEnvStep extends Step implements Serializable{
                 commandPath += "python";
             }
 
+            return commandPath;
+        }
+
+        private void createPythonEnv(StepContext stepContext, boolean isUnix, String relativeDir) throws Exception{
+            String fullQualifiedDirectoryName = getFullyQualifiedPythonEnvDirectoryName(stepContext, isUnix, relativeDir);
+            String commandPath = getCommandPath(isUnix, ToolInstallation.all());
             LOGGER.info("Creating virtualenv at " + fullQualifiedDirectoryName + " using Python installation " +
                     "found at " + commandPath);
 

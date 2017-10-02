@@ -24,30 +24,6 @@
   <description>Exposes a step in Jenkins Pipeline DSL for executing commands within a specified Python virtualenv</description>
   <url>https://wiki.jenkins.io/display/JENKINS/Pyenv+Pipeline+Plugin</url>
 
-  <build>
-    <plugins>
-      <plugin>
-        <groupId>se.bjurr.gitchangelog</groupId>
-        <artifactId>git-changelog-maven-plugin</artifactId>
-        <version>1.49</version>
-        <executions>
-          <execution>
-            <id>GenerateGitChangelogCommits</id>
-            <phase>generate-sources</phase>
-            <goals>
-              <goal>git-changelog</goal>
-            </goals>
-            <configuration>
-              <file>CHANGELOG.md</file>
-              <fromRef>${fromRef}</fromRef>
-              <toRef>${toRef}</toRef>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-    </plugins>
-  </build>
-
   <licenses>
     <license>
       <name>MIT License</name>
@@ -126,6 +102,30 @@
       <groupId>org.jenkins-ci.main</groupId>
       <artifactId>jenkins-test-harness</artifactId>
       <version>2.24</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>4.12</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.powermock</groupId>
+      <artifactId>powermock-module-junit4</artifactId>
+      <version>1.6.3</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.powermock</groupId>
+      <artifactId>powermock-api-mockito</artifactId>
+      <version>1.6.3</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-all</artifactId>
+      <version>1.10.19</version>
       <scope>test</scope>
     </dependency>
   </dependencies>

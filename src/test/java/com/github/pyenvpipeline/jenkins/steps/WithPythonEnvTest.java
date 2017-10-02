@@ -24,7 +24,6 @@
  */
 
 package com.github.pyenvpipeline.jenkins.steps;
-
 import org.junit.Assert;
 import org.junit.Test;
 
