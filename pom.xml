@@ -9,7 +9,7 @@
   </parent>
   <groupId>org.jenkins-ci.plugins</groupId>
   <artifactId>pyenv-pipeline</artifactId>
-  <version>1.0.1-SNAPSHOT</version>
+  <version>1.0.1</version>
   <packaging>hpi</packaging>
 
   <properties>
