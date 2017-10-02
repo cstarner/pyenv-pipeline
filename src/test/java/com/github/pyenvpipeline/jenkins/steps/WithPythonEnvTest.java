@@ -24,6 +24,7 @@
  */
 
 package com.github.pyenvpipeline.jenkins.steps;
+import hudson.util.ArgumentListBuilder;
 import org.junit.Assert;
 import org.junit.Test;
 

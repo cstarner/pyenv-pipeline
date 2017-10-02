@@ -162,8 +162,8 @@ public class WithPythonEnvStep extends Step implements Serializable{
             return commandPath;
         }
 
-        private void createPythonEnv(StepContext stepContext, boolean isUnix, String relativeDir) throws Exception{
-            String fullQualifiedDirectoryName = getFullyQualifiedPythonEnvDirectoryName(stepContext, isUnix, relativeDir);
+        public ArgumentListBuilder getCreateVirtualEnvCommand(StepContext context, boolean isUnix, String relativeDir) throws Exception {
+            String fullQualifiedDirectoryName = getFullyQualifiedPythonEnvDirectoryName(context, isUnix, relativeDir);
             String commandPath = getCommandPath(isUnix, ToolInstallation.all());
             LOGGER.info("Creating virtualenv at " + fullQualifiedDirectoryName + " using Python installation " +
                     "found at " + commandPath);
@@ -173,7 +173,14 @@ public class WithPythonEnvStep extends Step implements Serializable{
             command.add(commandPath);
             command.add("-m");
             command.add("virtualenv");
+            command.add("--python="+commandPath);
             command.add(fullQualifiedDirectoryName);
+
+            return command;
+        }
+
+        private void createPythonEnv(StepContext stepContext, boolean isUnix, String relativeDir) throws Exception{
+            ArgumentListBuilder command = getCreateVirtualEnvCommand(stepContext, isUnix, relativeDir);
 
             Launcher launcher = stepContext.get(Launcher.class);
 

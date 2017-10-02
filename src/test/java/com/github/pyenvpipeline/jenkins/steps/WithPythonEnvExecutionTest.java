@@ -1,9 +1,12 @@
 package com.github.pyenvpipeline.jenkins.steps;
 
 import hudson.DescriptorExtensionList;
+import hudson.EnvVars;
+import hudson.Functions;
 import hudson.model.TaskListener;
 import hudson.tools.ToolDescriptor;
 import hudson.tools.ToolInstallation;
+import hudson.util.ArgumentListBuilder;
 import jenkins.plugins.shiningpanda.tools.PythonInstallation;
 import org.jenkinsci.plugins.workflow.steps.StepContext;
 import org.junit.Assert;
@@ -21,7 +24,7 @@ import java.io.PrintStream;
 
 @RunWith(PowerMockRunner.class)
 @PowerMockIgnore({"javax.crypto.*" })
-public class WithPythonEnvGetCommandPathTest {
+public class WithPythonEnvExecutionTest {
 
     @Mock
     StepContext mockStepContext;
@@ -32,13 +35,18 @@ public class WithPythonEnvGetCommandPathTest {
     @Mock
     PrintStream mockPrintStream;
 
+    @Mock
+    EnvVars mockEnvVars;
+
     @Rule
     public JenkinsRule j = new JenkinsRule();
 
     @Before
     public void setUp() throws Exception {
         PowerMockito.when(mockStepContext.get(TaskListener.class)).thenReturn(mockTaskListener);
+        PowerMockito.when(mockStepContext.get(EnvVars.class)).thenReturn(mockEnvVars);
         PowerMockito.when(mockTaskListener.getLogger()).thenReturn(mockPrintStream);
+        PowerMockito.when(mockEnvVars.get("WORKSPACE")).thenReturn("C:\\Jenkins\\workspace\\foo");
     }
 
     @Test
@@ -85,5 +93,14 @@ public class WithPythonEnvGetCommandPathTest {
         // Here we assure that a ShiningPanda tool on a Windows system automatically appends the executable name at the
         // end
         Assert.assertEquals("C:\\Python27\\python", execution.getCommandPath(false, list));
+    }
+
+    @Test
+    public void testGetCreateVirtualEnvCommand() throws Exception {
+        WithPythonEnvStep windowsLiteralLocation = new WithPythonEnvStep("C:\\Python34\\python");
+        WithPythonEnvStep.Execution execution = new WithPythonEnvStep.Execution(windowsLiteralLocation, null);
+        ArgumentListBuilder createVirtualenvCommand = execution.getCreateVirtualEnvCommand(mockStepContext, false, ".pyenv-python");
+
+        Assert.assertEquals("C:\\Python34\\python -m virtualenv --python=C:\\Python34\\python C:\\Jenkins\\workspace\\foo\\.pyenv-python", createVirtualenvCommand.toString());
     }
 }
