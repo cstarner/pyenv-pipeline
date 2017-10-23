@@ -25,31 +25,32 @@
 
 package com.github.pyenvpipeline.jenkins.steps;
 
-import hudson.util.ArgumentListBuilder;
 import org.junit.Assert;
 import org.junit.Test;
 
-import java.util.logging.Logger;
-
 public class PyEnvBatStepTest {
-
-    static Logger logger = Logger.getLogger(PyEnvBatStepTest.class.getName());
 
     @Test
     public void testGetArgumentList() throws Exception {
         PyEnvBatStep batStep = new PyEnvBatStep("python --version");
         String baseDirectoryName = "C:\\Users\\username\\Documents\\Programming\\project\\.pyenv-python2.7\\";
-        ArgumentListBuilder argumentListBuilder = batStep.getArgumentList(baseDirectoryName);
-        String commandString = argumentListBuilder.toStringWithQuote();
+        String commandString = batStep.getFullScript(baseDirectoryName);
         Assert.assertEquals("@call " + baseDirectoryName + "\\Scripts\\activate \r\n python --version", commandString);
 
         // Assure that quotes are handled correctly
         PyEnvBatStep batStepWithQuotes = new PyEnvBatStep("python -c \"import sys; import platform; " +
                 "sys.stdout.write(platform.python_version())\"");
-        argumentListBuilder = batStepWithQuotes.getArgumentList(baseDirectoryName);
-        commandString = argumentListBuilder.toStringWithQuote();
+        commandString = batStepWithQuotes.getFullScript(baseDirectoryName);
         Assert.assertEquals("@call " + baseDirectoryName + "\\Scripts\\activate \r\n python -c " +
                 "\"import sys; import platform; sys.stdout.write(platform.python_version())\"", commandString);
 
+    }
+
+    @Test
+    public void testGetArgumentListSpaces() {
+        PyEnvBatStep batStep = new PyEnvBatStep("python --version");
+        String baseDirectoryName = "C:\\Path With Spaces\\.pyenv-python2.7\\";
+        String commandString = batStep.getFullScript(baseDirectoryName);
+        Assert.assertEquals("@call \"" + baseDirectoryName + "\\Scripts\\activate\" \r\n python --version", commandString);
     }
 }

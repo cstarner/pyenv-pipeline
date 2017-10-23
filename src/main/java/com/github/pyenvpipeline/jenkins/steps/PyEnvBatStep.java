@@ -17,7 +17,7 @@ public class PyEnvBatStep extends PyEnvDurableTaskBase {
     }
 
     @Override
-    public ArgumentListBuilder getArgumentList(String directoryName) {
+    public String getFullScript(String directoryName) {
 
         String commandLocation = directoryName + "\\Scripts\\activate";
 
@@ -26,11 +26,11 @@ public class PyEnvBatStep extends PyEnvDurableTaskBase {
         argumentListBuilder.add(commandLocation);
         argumentListBuilder.add("\r\n");
 
-        for (String s : splitWhileRespectingQuotes(script)) {
+        for (String s : splitWhileRespectingQuotes(script, true)) {
             argumentListBuilder.add(s);
         }
 
-        return argumentListBuilder;
+        return argumentListBuilder.toString();
     }
 
     @DataBoundConstructor public PyEnvBatStep(String script) {
