@@ -25,7 +25,6 @@
 
 package com.github.pyenvpipeline.jenkins.steps;
 
-import hudson.util.ArgumentListBuilder;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -34,17 +33,22 @@ public class PyEnvShellStepTest {
     @Test
     public void testGetArgumentList() throws Exception {
         PyEnvShellStep shellStep = new PyEnvShellStep("python --version");
-        ArgumentListBuilder argumentListBuilder = shellStep.getArgumentList("/home/username/.pyenv-python2.7/");
-        String commandString = argumentListBuilder.toStringWithQuote();
+        String commandString = shellStep.getFullScript("/home/username/.pyenv-python2.7/");
         Assert.assertEquals(". /home/username/.pyenv-python2.7/bin/activate; python --version", commandString);
 
         // Test that quotes in the string are handled correctly
         PyEnvShellStep shellStepWithQuotes = new PyEnvShellStep("python -c \"import sys; import platform; " +
                 "sys.stdout.write(platform.python_version())\"");
-        argumentListBuilder = shellStepWithQuotes.getArgumentList("/home/username/.pyenv-python2.7/");
-        commandString = argumentListBuilder.toStringWithQuote();
+        commandString = shellStepWithQuotes.getFullScript("/home/username/.pyenv-python2.7/");
         Assert.assertEquals(". /home/username/.pyenv-python2.7/bin/activate; python -c " +
                 "\"import sys; import platform; sys.stdout.write(platform.python_version())\"", commandString);
 
+    }
+
+    @Test
+    public void testGetArgumentListSpaces() {
+        PyEnvShellStep shellStep = new PyEnvShellStep("python --version");
+        String commandString = shellStep.getFullScript("/home/test with spaces/.pyenv-python2.7/");
+        Assert.assertEquals(". \"/home/test with spaces/.pyenv-python2.7/bin/activate\"; python --version", commandString);
     }
 }

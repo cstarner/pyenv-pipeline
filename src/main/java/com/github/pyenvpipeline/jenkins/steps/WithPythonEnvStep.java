@@ -26,6 +26,7 @@
 package com.github.pyenvpipeline.jenkins.steps;
 import com.google.common.collect.ImmutableSet;
 import hudson.*;
+import hudson.model.Run;
 import hudson.model.TaskListener;
 import hudson.tools.ToolDescriptor;
 import hudson.tools.ToolInstallation;
@@ -182,14 +183,29 @@ public class WithPythonEnvStep extends Step implements Serializable{
         private void createPythonEnv(StepContext stepContext, boolean isUnix, String relativeDir) throws Exception{
             ArgumentListBuilder command = getCreateVirtualEnvCommand(stepContext, isUnix, relativeDir);
 
+            ByteArrayOutputStream outputBaos = new ByteArrayOutputStream();
+
             Launcher launcher = stepContext.get(Launcher.class);
 
             Launcher.ProcStarter procStarter = launcher.launch();
             procStarter.cmds(command);
+            procStarter.stderr(outputBaos);
+            procStarter.stdout(outputBaos);
+
             Proc proc = procStarter.start();
 
-            proc.join();
-            LOGGER.info("Created virtualenv");
+            int exitCode = proc.join();
+
+            Run run = stepContext.get(Run.class);
+            String capturedOutput = outputBaos.toString(run.getCharset().name());
+
+            if (exitCode != 0) {
+                logger().println("Error while creating virtualenv: " + capturedOutput);
+                LOGGER.warning(capturedOutput);
+            } else {
+                LOGGER.fine(capturedOutput);
+                LOGGER.info("Created virtualenv");
+            }
         }
 
         private PrintStream logger() {
@@ -278,7 +294,7 @@ public class WithPythonEnvStep extends Step implements Serializable{
 
         @Override
         public Set<? extends Class<?>> getRequiredContext() {
-            return ImmutableSet.of(EnvVars.class, Launcher.class);
+            return ImmutableSet.of(EnvVars.class, Launcher.class, Run.class);
         }
     }
 }
