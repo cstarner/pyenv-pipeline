@@ -42,6 +42,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Pattern;
 
 import static com.github.pyenvpipeline.jenkins.steps.PyEnvConstants.VALID_TOOL_DESCRIPTOR_IDS;
 
@@ -58,7 +59,7 @@ public class WithPythonEnvStep extends Step implements Serializable{
     }
 
     public String getPythonInstallation() {
-        return pythonInstallation;
+        return pythonInstallation.trim();
     }
 
     @Override
@@ -133,34 +134,69 @@ public class WithPythonEnvStep extends Step implements Serializable{
             usingShiningPanda = false;
         }
 
+        protected String getUnixCommandPath(String baseToolDirectory) throws Exception {
+            if (!baseToolDirectory.equals("")) {
+                // ShiningPanda, on Linux, returns direct links to Python Exceutables
+                return baseToolDirectory;
+            } else {
+                // This either points to a little python executable, or a directory that contains one
+                String commandPathBase = step.getPythonInstallation();
+
+                String[] portions = commandPathBase.split(Pattern.quote("/"));
+                String lastPortion = portions[portions.length-1];
+
+                if (!lastPortion.contains("python")) {
+                    if (!commandPathBase.endsWith("/")) {
+                        commandPathBase += "/";
+                    }
+
+                    commandPathBase += "python";
+                }
+
+                return commandPathBase;
+            }
+        }
+
+        protected String getWindowsCommandPath(String baseToolDirectory) throws Exception {
+
+            String result = "";
+
+            // ShiningPanda on Windows only gives us the directory, not the full path. However, we will catch this
+            // further down. Here we only care if no ShiningPanda tool was found
+            if (baseToolDirectory.equals("")) {
+                result = step.getPythonInstallation();
+            } else {
+                result = baseToolDirectory;
+            }
+
+            logger().println("post-init result: "+ result);
+
+            String[] portions = result.split(Pattern.quote("\\"));
+            String pathEnd = portions[portions.length-1];
+
+            if (!pathEnd.contains("python")) {
+                if (result.length() > 0 && !result.endsWith("\\")) {
+                    result += "\\";
+                }
+
+                result += "python.exe";
+            }
+
+            if (!result.endsWith(".exe")) {
+                result += ".exe";
+            }
+
+            return result;
+        }
+
         protected String getCommandPath(boolean isUnix, DescriptorExtensionList<ToolInstallation, ToolDescriptor<?>> descriptors) throws Exception {
 
             String baseToolDirectory = getBaseToolDirectory(descriptors);
-
-            String commandPath;
-
-            if (!baseToolDirectory.equals("")) {
-
-                // ShiningPanda returns actual Python instances for Linux, but only returns folders for Windows
-                if (usingShiningPanda && !isUnix) {
-
-                    if (!baseToolDirectory.endsWith("\\")) {
-                        baseToolDirectory += "\\";
-                    }
-
-                    baseToolDirectory += "python";
-                }
-
-                commandPath = baseToolDirectory;
+            if (isUnix) {
+                return getUnixCommandPath(baseToolDirectory);
             } else {
-                commandPath = step.getPythonInstallation();
+                return getWindowsCommandPath(baseToolDirectory);
             }
-
-            if (!commandPath.contains("python")) {
-                commandPath += "python";
-            }
-
-            return commandPath;
         }
 
         public ArgumentListBuilder getCreateVirtualEnvCommand(StepContext context, boolean isUnix, String relativeDir) throws Exception {
@@ -200,8 +236,9 @@ public class WithPythonEnvStep extends Step implements Serializable{
             String capturedOutput = outputBaos.toString(run.getCharset().name());
 
             if (exitCode != 0) {
-                logger().println("Error while creating virtualenv: " + capturedOutput);
-                LOGGER.warning(capturedOutput);
+                String errorMessage = "Error while creating virtualenv: " + capturedOutput;
+                getContext().onFailure(new AbortException(errorMessage));
+                LOGGER.warning(errorMessage);
             } else {
                 LOGGER.fine(capturedOutput);
                 LOGGER.info("Created virtualenv");
@@ -251,7 +288,7 @@ public class WithPythonEnvStep extends Step implements Serializable{
 
         @Override
         public void stop(@Nonnull Throwable throwable) throws Exception {
-            if (body != null ){
+            if (body != null ) {
                 body.cancel();
             }
         }
