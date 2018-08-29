@@ -54,3 +54,9 @@ This plugin provides 1 new Pipeline DSL method:
   blocks. These steps are no longer necessary, and as such, are no longer
   provided by the library. To migrate, simply remove the <code>py</code>
   prefix from any such steps, and the command should work as intended
+
+
+  * Multibranch pipeline builds will occasionally generate very long path names
+  triggering pypa/virtualenv#596. In these instances, use of this plugin is not
+  an option, at least at this time. 
+  
