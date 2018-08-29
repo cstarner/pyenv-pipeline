@@ -41,5 +41,7 @@ public class WithPythonEnvTest {
         Assert.assertEquals(".pyenv-foo-bar-blah-python", virtualenvManager.getRelativePythonEnvDirectory("/foo/bar/blah/python"));
         Assert.assertEquals(".pyenv-foo-bar-blah-python", virtualenvManager.getRelativePythonEnvDirectory("foo/bar/blah/python"));
         Assert.assertEquals(".pyenv-python3", virtualenvManager.getRelativePythonEnvDirectory("python3"));
+        Assert.assertEquals(".pyenv-Foo-Bar-python3", virtualenvManager.getRelativePythonEnvDirectory("c:\\Foo\\Bar\\python3"));
+        Assert.assertEquals(".pyenv-Foo-Bar-python3", virtualenvManager.getRelativePythonEnvDirectory("D:\\Foo\\Bar\\python3"));
     }
 }
