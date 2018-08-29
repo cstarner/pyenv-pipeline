@@ -336,7 +336,7 @@ public class VirtualenvManager implements Serializable {
 
     public String getRelativePythonEnvDirectory(String pythonInstallation){
         String postfix = pythonInstallation.replaceAll("/", "-")
-                .replaceFirst("C:\\\\", "")
+                .replaceFirst("[a-zA-Z]:\\\\", "")
                 .replaceAll("\\\\", "-");
 
         if (!postfix.startsWith("-")) {
