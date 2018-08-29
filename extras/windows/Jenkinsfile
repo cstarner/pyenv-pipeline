@@ -1,0 +1,23 @@
+// Test Jenkinsfile to verify that the program runs as intended. This is intended for Windows
+
+pipeline {
+    agent any
+
+    stages {
+        stage('Test') {
+            steps {
+                withPythonEnv('python') {
+                    bat "python --version"
+                }
+
+                withPythonEnv('C:\\Python34\\python') {
+                    bat "python --version"
+                }
+
+                withPythonEnv('CPython-3.2') {
+                    bat "python --version"
+                }
+            }
+        }
+    }
+}

@@ -25,6 +25,7 @@
 
 package com.github.pyenvpipeline.jenkins.steps;
 
+import com.github.pyenvpipeline.jenkins.VirtualenvManager;
 import hudson.Functions;
 import hudson.tools.ToolDescriptor;
 import hudson.tools.ToolInstallation;
@@ -34,10 +35,13 @@ import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.Rule;
 import org.junit.Test;
 import org.jvnet.hudson.test.JenkinsRule;
 import org.jvnet.hudson.test.LoggerRule;
+import org.omg.PortableInterceptor.SYSTEM_EXCEPTION;
+
 import java.util.List;
 import java.util.logging.Level;
 import java.util.regex.Pattern;
@@ -61,21 +65,10 @@ public class WithPythonEnvStepIntegrationTest {
 
     private String formatOSSpecificNodeScipts(String osAgnosticScript) {
         if (Functions.isWindows()) {
-            return osAgnosticScript.replaceAll(Pattern.quote(OS_REPLACE_TARGET), "pybat");
+            return osAgnosticScript.replaceAll(Pattern.quote(OS_REPLACE_TARGET), "bat");
         } else {
-            return osAgnosticScript.replaceAll(Pattern.quote(OS_REPLACE_TARGET), "pysh");
+            return osAgnosticScript.replaceAll(Pattern.quote(OS_REPLACE_TARGET), "sh");
         }
-    }
-
-    @Test
-    public void shouldSetEnvVar() throws Exception {
-        // We only test the relative dir name here, since we can't easily predict the full directory name
-        WorkflowJob job = j.jenkins.createProject(WorkflowJob.class, "p");
-        job.setDefinition(new CpsFlowDefinition("node { withPythonEnv('python') { echo \"current virtualenv " +
-                "relative dir: ${" + PyEnvConstants.VIRTUALENV_RELATIVE_DIRECTORY_NAME_ENV_VAR_KEY + "}\" } }",
-                true));
-        WorkflowRun run = j.assertBuildStatusSuccess(job.scheduleBuild2(0));
-        j.assertLogContains("current virtualenv relative dir: .pyenv-python", run);
     }
 
     private PythonInstallation findSinglePythonInstallation(ToolDescriptor descriptor) throws Exception {
@@ -159,19 +152,12 @@ public class WithPythonEnvStepIntegrationTest {
         // Note that this will not work if there are no findable Python Installations on the testing
         // system (i.e. findable via the PythonFinder class provided by the ShiningPanda plugin).
         PythonInstallation installation = findFirstPythonInstallation();
+        Assume.assumeTrue(installation != null);
 
-        String workflowScript = "node { withPythonEnv('python') { echo \"current virtualenv relative dir: ${" +
-                PyEnvConstants.VIRTUALENV_RELATIVE_DIRECTORY_NAME_ENV_VAR_KEY + "}\" }";
+        String workflowScript = "node { withPythonEnv('" + installation.getName() + "') {  } }";
 
-        if (installation!=null) {
-            workflowScript += "\nwithPythonEnv('" + installation.getName() + "') { echo \"current virtualenv absolute " +
-                    "dir: ${" + PyEnvConstants.VIRTUALENV_LOCATION_ENV_VAR_KEY + "}\" }";
-        }
-
-        workflowScript += "}";
-
-        loggingRule = loggingRule.capture(30);
-        loggingRule.record(WithPythonEnvStep.class, Level.FINE);
+        loggingRule = loggingRule.capture(300);
+        loggingRule.record(VirtualenvManager.class, Level.FINE);
         WorkflowJob job = j.jenkins.createProject(WorkflowJob.class, "p");
         job.setDefinition(new CpsFlowDefinition(workflowScript,
                 true));
@@ -185,13 +171,13 @@ public class WithPythonEnvStepIntegrationTest {
         String expectedMatchedShiningPandaString = "Matched ShiningPanda tool name: " + installation.getName();
         boolean foundExpectedMatchedShiningPanda = false;
 
-        for (String mess : messages) {
+        for (String message : messages) {
             if (!foundExpectedFlaggedShiningPanda) {
-                foundExpectedFlaggedShiningPanda = mess.equals(expectedFoundFlaggedShiningPandaString);
+                foundExpectedFlaggedShiningPanda = message.contains(expectedFoundFlaggedShiningPandaString);
             }
 
             if (!foundExpectedMatchedShiningPanda) {
-                foundExpectedMatchedShiningPanda = mess.equals(expectedMatchedShiningPandaString);
+                foundExpectedMatchedShiningPanda = message.contains(expectedMatchedShiningPandaString);
             }
 
             if (foundExpectedFlaggedShiningPanda && foundExpectedMatchedShiningPanda) {

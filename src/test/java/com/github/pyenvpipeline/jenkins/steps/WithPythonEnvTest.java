@@ -24,6 +24,7 @@
  */
 
 package com.github.pyenvpipeline.jenkins.steps;
+import com.github.pyenvpipeline.jenkins.VirtualenvManager;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -35,16 +36,10 @@ public class WithPythonEnvTest {
 
     @Test
     public void testGetBaseDirectory() {
-        WithPythonEnvStep windowsStep = new WithPythonEnvStep("C:\\Foo\\Bar\\python3");
-        Assert.assertEquals(".pyenv-Foo-Bar-python3", windowsStep.getRelativePythonEnvDirectory());
-
-        WithPythonEnvStep unixStep = new WithPythonEnvStep("/foo/bar/blah/python");
-        Assert.assertEquals(".pyenv-foo-bar-blah-python", unixStep.getRelativePythonEnvDirectory());
-
-        unixStep = new WithPythonEnvStep("foo/bar/blah/python");
-        Assert.assertEquals(".pyenv-foo-bar-blah-python", unixStep.getRelativePythonEnvDirectory());
-
-        WithPythonEnvStep rawStep = new WithPythonEnvStep("python3");
-        Assert.assertEquals(".pyenv-python3", rawStep.getRelativePythonEnvDirectory());
+        VirtualenvManager virtualenvManager = VirtualenvManager.getInstance();
+        Assert.assertEquals(".pyenv-Foo-Bar-python3", virtualenvManager.getRelativePythonEnvDirectory("C:\\Foo\\Bar\\python3"));
+        Assert.assertEquals(".pyenv-foo-bar-blah-python", virtualenvManager.getRelativePythonEnvDirectory("/foo/bar/blah/python"));
+        Assert.assertEquals(".pyenv-foo-bar-blah-python", virtualenvManager.getRelativePythonEnvDirectory("foo/bar/blah/python"));
+        Assert.assertEquals(".pyenv-python3", virtualenvManager.getRelativePythonEnvDirectory("python3"));
     }
 }
