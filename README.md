@@ -4,18 +4,19 @@ A Jenkins plugin that provides a way to execute <code>sh</code> and
 virtualenv.
 
 ## Overview
-This plugin provides 3 new Pipeline DSL methods:
+This plugin provides 1 new Pipeline DSL method:
 
 * <code>withPythonEnv</code>: Specifies a Python virtualenv to execute
-  any <code>pysh</code> and <code>pybat</code> DSL commands contained 
+  any <code>sh</code> and <code>bat</code> DSL commands contained 
   within its block.
   
   <code>withPythonEnv</code> takes a single String argument, which
   specifies the Python executable to use for the virtualenv.
   pyenv-pipeline will use the executable to generate a corresponding
-  virtualenv, and store it's location in the 
-  <code>PYENVPIPELINE_VIRTUALENV_RELATIVE_DIRECTORY</code> environmental
-  variable.
+  virtualenv. At runtime, it will take a snapshot of environmental 
+  variables with and without the virtualenv active. From this it generates
+  a diff, and applies the environmental variable changes within the
+  <code>withPythonEnv</code> block (reverting them after the block completes)
   
   The argument provided to <code>withPythonEnv</code> will first attempt
   to match it against the name of a <code>ToolInstallation</code> that
@@ -33,7 +34,6 @@ This plugin provides 3 new Pipeline DSL methods:
   * <pre><code>withPythonEnv('python') {
         // Uses the default system installation of Python
         // Equivalent to withPythonEnv('/usr/bin/python') 
-        // or withPythonEnv('/usr/bin') on Ubuntu
         ...
     }
     </code></pre>
@@ -45,10 +45,12 @@ This plugin provides 3 new Pipeline DSL methods:
         // Uses the ShiningPanda registered Python installation named 'CPython-2.7'
         ...
     }</code></pre>  
-* <code>pysh</code>: Functions as the provided <code>sh</code> Pipeline DSL
-  command, expect that if it finds the <code>PYENVPIPELINE_VIRTUALENV_RELATIVE_DIRECTORY</code>
-  environmental variable, it activates the virtualenv located there prior
-  to running the provided script.
-  
-* <code>pybat</code>: Works just like <code>pysh</code>, expect for Windows
-  build environments
+
+
+## Warnings:
+
+  * Earlier version of this plugin relied on using <code>pysh</code> and
+  <code>pybat</code> steps to execute code within <code>withPythonEnv</code>
+  blocks. These steps are no longer necessary, and as such, are no longer
+  provided by the library. To migrate, simply remove the <code>py</code>
+  prefix from any such steps, and the command should work as intended

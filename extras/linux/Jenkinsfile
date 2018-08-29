@@ -1,0 +1,19 @@
+// Test Jenkinsfile to verify that the program runs as intended. This is intended for Linux
+
+pipeline {
+    agent any
+
+    stages {
+        stage('Test') {
+            steps {
+                withPythonEnv('python') {
+                    sh "python --version"
+                }
+
+                withPythonEnv('/usr/bin/python3') {
+                    sh "python --version"
+                }
+            }
+        }
+    }
+}
