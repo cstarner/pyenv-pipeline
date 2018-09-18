@@ -82,7 +82,7 @@ public class VirtualenvManager implements Serializable {
     public String getFullyQualifiedPythonEnvDirectoryName(StepContext stepContext, String pythonInstallation) throws Exception{
         EnvVars envVars = stepContext.get(EnvVars.class);
         String workspace = envVars.get("WORKSPACE");
-        boolean isUnix = stepContext.get(Launcher.class).isUnix();
+        boolean isUnix = isUnix(stepContext);
         String relativeDir = getRelativePythonEnvDirectory(pythonInstallation);
 
         if (isUnix) {
@@ -217,11 +217,59 @@ public class VirtualenvManager implements Serializable {
         for (Map.Entry<String, String> entry : postEnvChange.entrySet()) {
             String originalValue = preEnvChange.get(entry.getKey());
 
-            if (originalValue == null || !originalValue.equals(entry.getValue())) {
-                result.put(entry.getKey(), entry.getValue());
+            if (entry.getKey().equals("PATH")) {
+                // This is so we comply with how Jenkins expects the PATH variable to be modified within the
+                // pipeline. We also know that the PATH variable is present in any circumstance, as well as
+                // changed by virtualenv.
+                String pathAddition = processPathValues(originalValue, entry.getValue(), stepContext);
+                result.put("PATH+PYTHON", pathAddition);
+            } else {
+                if (originalValue == null || !originalValue.equals(entry.getValue())) {
+                    result.put(entry.getKey(), entry.getValue());
+                }
             }
         }
         return result;
+    }
+
+    protected String processPathValues(String originalPath, String newPath, StepContext context) throws Exception {
+        List<String> newPortions = new ArrayList<>();
+        String pathSeparator = isUnix(context) ? getUnixPathSeparator() : getWindowsPathSeparator();
+
+        List<String> originalPathEntries = new ArrayList<>(Arrays.asList(originalPath.split(pathSeparator)));
+        List<String> newPathEntries = new ArrayList<>(Arrays.asList(newPath.split(pathSeparator)));
+
+        // It appears that virtualenv modifies the PATH variable by appending the path to the appropriate virtualenv
+        // folder to the front of the path variable. In order to grab these values, we will pop the front of the new
+        // path off, until the first values of both lists match.
+
+        while (!originalPathEntries.get(0).equals(newPathEntries.get(0))) {
+            String entry = newPathEntries.remove(0);
+            newPortions.add(entry);
+        }
+
+        StringBuilder builder = new StringBuilder();
+
+        for (String pathPortion: newPortions) {
+            builder.append(pathPortion);
+            builder.append(pathSeparator);
+        }
+
+        String result = builder.toString();
+
+        if (result.length() > 1) {
+            result =  result.substring(0, result.length() - pathSeparator.length());
+        }
+
+        return result;
+    }
+
+    private String getWindowsPathSeparator() {
+        return ";";
+    }
+
+    private String getUnixPathSeparator() {
+        return ":";
     }
 
     protected String getWindowsCommandPath(String baseToolDirectory, String pythonInstallation) throws Exception {
@@ -254,9 +302,13 @@ public class VirtualenvManager implements Serializable {
         return result;
     }
 
+    private boolean isUnix(StepContext context) throws Exception {
+        return context.get(Launcher.class).isUnix();
+    }
+
     protected String getCommandPath(String pythonInstallation, StepContext context, DescriptorExtensionList<ToolInstallation, ToolDescriptor<?>> descriptors) throws Exception {
 
-        boolean isUnix = context.get(Launcher.class).isUnix();
+        boolean isUnix = isUnix(context);
         String baseToolDirectory = getBaseToolDirectory(pythonInstallation, context, descriptors);
         if (isUnix) {
             return getUnixCommandPath(baseToolDirectory, pythonInstallation);
