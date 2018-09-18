@@ -8,10 +8,17 @@ pipeline {
             steps {
                 withPythonEnv('python') {
                     sh "python --version"
+                    sh "pip -V"
                 }
 
                 withPythonEnv('/usr/bin/python3') {
                     sh "python --version"
+                    sh "pip -V"
+                }
+
+                withPythonEnv('CPython-3.5') {
+                    sh "python --version"
+                    sh "pip -V"
                 }
             }
         }
