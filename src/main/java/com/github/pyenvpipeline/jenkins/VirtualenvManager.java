@@ -98,12 +98,40 @@ public class VirtualenvManager implements Serializable {
         LOGGER.info("Creating virtualenv at " + fullQualifiedDirectoryName + " using Python installation " +
                 "found at " + commandPath);
 
-        ArgumentListBuilder command = new ArgumentListBuilder();
+        // Checking version of python
+        ArgumentListBuilder versionChecker = new ArgumentListBuilder();
+        versionChecker.add(commandPath);
+        versionChecker.add("--version");
+        String versionOutput = runCommandList(versionChecker, context);
 
+        String[] outputPortions = versionOutput.split(Pattern.quote(" "));
+        String versionPortion = outputPortions[outputPortions.length-1];
+        String[] versionsPortions = versionPortion.split(Pattern.quote("."));
+
+        boolean prePEP405 = true;
+
+        if (versionsPortions.length >= 3) {
+            Integer major = Integer.parseInt(versionsPortions[0]);
+            Integer minor = Integer.parseInt(versionsPortions[1]);
+
+            if ((major > 3) || ((major == 3) && (minor >= 7))) {
+                prePEP405 = false;
+            }
+        }
+
+        // Composing command
+        ArgumentListBuilder command = new ArgumentListBuilder();
         command.add(commandPath);
-        command.add("-m");
-        command.add("virtualenv");
-        command.add("--python="+commandPath);
+
+        if (prePEP405) {
+            command.add("-m");
+            command.add("virtualenv");
+            command.add("--python="+commandPath);
+        } else {
+            command.add("-m");
+            command.add("venv");
+        }
+
         command.add(fullQualifiedDirectoryName);
 
         return command;
