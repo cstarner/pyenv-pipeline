@@ -114,7 +114,7 @@ public class VirtualenvManager implements Serializable {
             Integer major = Integer.parseInt(versionsPortions[0]);
             Integer minor = Integer.parseInt(versionsPortions[1]);
 
-            if ((major > 3) || ((major == 3) && (minor >= 7))) {
+            if ((major > 3) || ((major == 3) && (minor >= 6))) {
                 prePEP405 = false;
             }
         }
