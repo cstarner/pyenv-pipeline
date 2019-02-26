@@ -6,16 +6,37 @@ pipeline {
     stages {
         stage('Test') {
             steps {
+                cleanWs()
+
                 withPythonEnv('python') {
                     bat "python --version"
+                    bat "pip -V"
                 }
 
                 withPythonEnv('C:\\Python34\\python') {
                     bat "python --version"
+                    bat "pip -V"
                 }
 
                 withPythonEnv('CPython-3.2') {
                     bat "python --version"
+                    bat "pip -V"
+                }
+
+                withPythonEnv('C:\\tools\\python3\\python3') {
+                    bat "python --version"
+                    bat "pip -V"
+                }
+
+                withPythonEnv('C:\\tools\\python3\\python3.exe') {
+                    bat "python --version"
+                    bat "pip -V"
+                }
+
+                withPythonEnv('C:\\Program Files (x86)\\Jenkins\\managed_virtualenv\\') {
+                    // Test for ManagedVirtualenv
+                    bat "python --version"
+                    bat "pip -V"
                 }
             }
         }

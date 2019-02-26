@@ -28,12 +28,18 @@ public class VirtualenvManager implements Serializable {
     private static final Logger LOGGER = Logger.getLogger(VirtualenvManager.class.getName());
     private static final List<String> ENVVARS_TO_IGNORE = Arrays.asList("HUDSON_COOKIE");
     private static HashMap<String, EnvVars> virtualenvMap = new HashMap<>();
-    static final String[] VALID_TOOL_DESCRIPTOR_IDS = {"jenkins.plugins.shiningpanda.tools.PythonInstallation"};
-    private static final String DEFAULT_DIR_PREFIX = ".pyenv";
 
     private static VirtualenvManager instance;
+    private List<? extends AbstractVirtualenvFactory> factories;
 
     private VirtualenvManager() {
+        // This represents the priority order of the factories to be applied
+        // We will use Tool first, Managed second, etc
+        factories = Arrays.asList(
+            new ToolVirtualenv.Factory(),
+            new ManagedVirtualenv.Factory(),
+            new WorkspaceVirtualenv.Factory()
+        );
     }
 
     public static VirtualenvManager getInstance() {
@@ -42,6 +48,32 @@ public class VirtualenvManager implements Serializable {
         }
 
         return instance;
+    }
+
+    public EnvVars getVirtualEnvEnvVars(WithPythonEnvStep step, StepContext stepContext) throws Exception {
+        String withPythonEnvBlockArgument = step.getPythonInstallation();
+        EnvVars result = virtualenvMap.get(step.getPythonInstallation());
+
+        if (result == null) {
+            StepContextWrapper stepContextWrapper = createStepContextWrapper(stepContext);
+            AbstractVirtualenv abstractVirtualenv = generateVirtualenv(withPythonEnvBlockArgument, stepContextWrapper);
+
+            if (abstractVirtualenv != null) {
+                LOGGER.info("abstractVirtualenv: " + abstractVirtualenv.toString());
+                if (!stepContext.get(FilePath.class).child(abstractVirtualenv.getVirtualEnvPath()).exists()) {
+
+                    if (abstractVirtualenv.canCreate()) {
+                        createPythonEnv(stepContext, abstractVirtualenv);
+                    }
+                }
+
+                result = diffEnvironments(stepContextWrapper, abstractVirtualenv.getVirtualEnvPath());
+            } else {
+                stepContextWrapper.logger().println("Could not determine virtualenv for argument \"" + withPythonEnvBlockArgument + "\"" );
+            }
+        }
+
+        return result;
     }
 
     private String runCommandList(ArgumentListBuilder command, StepContext stepContext) throws Exception {
@@ -74,29 +106,16 @@ public class VirtualenvManager implements Serializable {
         return capturedOutput;
     }
 
-    private void createPythonEnv(StepContext stepContext, String pythonInstallation) throws Exception{
-        ArgumentListBuilder command = getCreateVirtualEnvCommand(stepContext, pythonInstallation);
+    private void createPythonEnv(StepContext stepContext, AbstractVirtualenv abstractVirtualenv) throws Exception{
+        ArgumentListBuilder command = getCreateVirtualEnvCommand(abstractVirtualenv);
         runCommandList(command, stepContext);
     }
 
-    public String getFullyQualifiedPythonEnvDirectoryName(StepContext stepContext, String pythonInstallation) throws Exception{
-        EnvVars envVars = stepContext.get(EnvVars.class);
-        String workspace = envVars.get("WORKSPACE");
-        boolean isUnix = isUnix(stepContext);
-        String relativeDir = getRelativePythonEnvDirectory(pythonInstallation);
-
-        if (isUnix) {
-            return workspace + "/" + relativeDir;
-        } else {
-            return workspace + "\\" + relativeDir;
-        }
-    }
-
-    public ArgumentListBuilder getCreateVirtualEnvCommand(StepContext context, String pythonInstallation) throws Exception {
-        String fullQualifiedDirectoryName = getFullyQualifiedPythonEnvDirectoryName(context, pythonInstallation);
-        String commandPath = getCommandPath(pythonInstallation, context, ToolInstallation.all());
+    protected ArgumentListBuilder getCreateVirtualEnvCommand(AbstractVirtualenv abstractVirtualenv) throws Exception {
+        String fullQualifiedDirectoryName = abstractVirtualenv.getVirtualEnvPath();
+        String pythonCommandPath = abstractVirtualenv.getPythonInstallationPath();
         LOGGER.info("Creating virtualenv at " + fullQualifiedDirectoryName + " using Python installation " +
-                "found at " + commandPath);
+                "found at " + pythonCommandPath);
 
         // Checking version of python
         ArgumentListBuilder versionChecker = new ArgumentListBuilder();
@@ -131,7 +150,6 @@ public class VirtualenvManager implements Serializable {
             command.add("-m");
             command.add("venv");
         }
-
         command.add(fullQualifiedDirectoryName);
 
         return command;
@@ -194,18 +212,29 @@ public class VirtualenvManager implements Serializable {
         return result;
     }
 
-    public EnvVars getVirtualEnvEnvVars(WithPythonEnvStep step, StepContext stepContext) throws Exception {
-        EnvVars result = virtualenvMap.get(step.getPythonInstallation());
+    private StepContextWrapper createStepContextWrapper(StepContext stepContext) throws Exception {
+        boolean isUnix = stepContext.get(Launcher.class).isUnix();
+        EnvVars envVars = stepContext.get(EnvVars.class);
+        String workspace = envVars.get("WORKSPACE");
 
-        if (result == null) {
-            String pythonInstallation = step.getPythonInstallation();
-            String virtualenvDirectory = getFullyQualifiedPythonEnvDirectoryName(stepContext, pythonInstallation);
+        String directoryCharacter = isUnix ? "/" : "\\";
 
-            if (!stepContext.get(FilePath.class).child(virtualenvDirectory).exists()) {
-                createPythonEnv(stepContext, step.getPythonInstallation());
+        if (!workspace.endsWith(directoryCharacter)) {
+            workspace += directoryCharacter;
+        }
+
+        return new StepContextWrapper(stepContext, isUnix, workspace);
+    }
+
+    protected AbstractVirtualenv generateVirtualenv(String withPythonEnvBlockArgument, StepContextWrapper stepContextWrapper) throws Exception {
+
+        AbstractVirtualenv result = null;
+
+        for (AbstractVirtualenvFactory factory : factories) {
+            if (factory.canBeBuilt(withPythonEnvBlockArgument, stepContextWrapper)) {
+                result = factory.build(withPythonEnvBlockArgument, stepContextWrapper);
+                break;
             }
-
-            result = diffEnvironments(stepContext, virtualenvDirectory);
         }
 
         return result;
@@ -229,7 +258,8 @@ public class VirtualenvManager implements Serializable {
        return new String(controller.getOutput(filePath, launcher), context.get(Run.class).getCharset());
     }
 
-    protected EnvVars diffEnvironments(StepContext stepContext, String relativeDir) throws Exception {
+    protected EnvVars diffEnvironments(StepContextWrapper stepContextWrapper, String relativeDir) throws Exception {
+        StepContext stepContext = stepContextWrapper.getStepContext();
         Launcher launcher = stepContext.get(Launcher.class);
 
         DurableTask preEnvChangeTask = getPreVirtualenvTask(launcher.isUnix());
@@ -249,7 +279,7 @@ public class VirtualenvManager implements Serializable {
                 // This is so we comply with how Jenkins expects the PATH variable to be modified within the
                 // pipeline. We also know that the PATH variable is present in any circumstance, as well as
                 // changed by virtualenv.
-                String pathAddition = processPathValues(originalValue, entry.getValue(), stepContext);
+                String pathAddition = processPathValues(originalValue, entry.getValue(), stepContextWrapper);
                 result.put("PATH+PYTHON", pathAddition);
             } else {
                 if (originalValue == null || !originalValue.equals(entry.getValue())) {
@@ -260,9 +290,9 @@ public class VirtualenvManager implements Serializable {
         return result;
     }
 
-    protected String processPathValues(String originalPath, String newPath, StepContext context) throws Exception {
+    protected String processPathValues(String originalPath, String newPath, StepContextWrapper stepContextWrapper) throws Exception {
         List<String> newPortions = new ArrayList<>();
-        String pathSeparator = isUnix(context) ? getUnixPathSeparator() : getWindowsPathSeparator();
+        String pathSeparator = stepContextWrapper.isUnix() ? getUnixPathSeparator() : getWindowsPathSeparator();
 
         List<String> originalPathEntries = new ArrayList<>(Arrays.asList(originalPath.split(pathSeparator)));
         List<String> newPathEntries = new ArrayList<>(Arrays.asList(newPath.split(pathSeparator)));
@@ -298,132 +328,6 @@ public class VirtualenvManager implements Serializable {
 
     private String getUnixPathSeparator() {
         return ":";
-    }
-
-    protected String getWindowsCommandPath(String baseToolDirectory, String pythonInstallation) throws Exception {
-
-        String result;
-
-        // ShiningPanda on Windows only gives us the directory, not the full path. However, we will catch this
-        // further down. Here we only care if no ShiningPanda tool was found
-        if (baseToolDirectory.equals("")) {
-            result = pythonInstallation;
-        } else {
-            result = baseToolDirectory;
-        }
-
-        String[] portions = result.split(Pattern.quote("\\"));
-        String pathEnd = portions[portions.length-1];
-
-        if (!pathEnd.contains("python")) {
-            if (result.length() > 0 && !result.endsWith("\\")) {
-                result += "\\";
-            }
-
-            result += "python.exe";
-        }
-
-        if (!result.endsWith(".exe")) {
-            result += ".exe";
-        }
-
-        return result;
-    }
-
-    private boolean isUnix(StepContext context) throws Exception {
-        return context.get(Launcher.class).isUnix();
-    }
-
-    protected String getCommandPath(String pythonInstallation, StepContext context, DescriptorExtensionList<ToolInstallation, ToolDescriptor<?>> descriptors) throws Exception {
-
-        boolean isUnix = isUnix(context);
-        String baseToolDirectory = getBaseToolDirectory(pythonInstallation, context, descriptors);
-        if (isUnix) {
-            return getUnixCommandPath(baseToolDirectory, pythonInstallation);
-        } else {
-            return getWindowsCommandPath(baseToolDirectory, pythonInstallation);
-        }
-    }
-
-    protected String getUnixCommandPath(String baseToolDirectory, String pythonInstallation) throws Exception {
-        if (!baseToolDirectory.equals("")) {
-            // ShiningPanda, on Linux, returns direct links to Python Exceutables
-            return baseToolDirectory;
-        } else {
-            // This either points to a little python executable, or a directory that contains one
-            String commandPathBase = pythonInstallation;
-
-            String[] portions = commandPathBase.split(Pattern.quote("/"));
-            String lastPortion = portions[portions.length-1];
-
-            if (!lastPortion.contains("python")) {
-                if (!commandPathBase.endsWith("/")) {
-                    commandPathBase += "/";
-                }
-
-                commandPathBase += "python";
-            }
-
-            return commandPathBase;
-        }
-    }
-
-    private String getBaseToolDirectory(String pythonInstallation, StepContext context, DescriptorExtensionList<ToolInstallation, ToolDescriptor<?>> descriptors) {
-        List<String> validToolDescriptors = Arrays.asList(VALID_TOOL_DESCRIPTOR_IDS);
-        for (ToolDescriptor<?> desc : descriptors) {
-
-            if (!validToolDescriptors.contains(desc.getId())) {
-                LOGGER.info("Skipping ToolDescriptor: "+ desc.getId());
-                continue;
-            }
-            LOGGER.info("Found Python ToolDescriptor: " + desc.getId());
-            ToolInstallation[] installations = unboxToolInstallations(desc);
-            for (ToolInstallation installation : installations) {
-                if (installation.getName().equals(pythonInstallation)) {
-                    String notification = "Matched ShiningPanda tool name: " + installation.getName();
-                    logger(context).println(notification);
-                    LOGGER.info(notification);
-                    return installation.getHome();
-                } else {
-                    LOGGER.info("Skipping ToolInstallation: "+pythonInstallation);
-                }
-            }
-        }
-
-        return "";
-    }
-
-    private<T extends ToolInstallation> T[] unboxToolInstallations(ToolDescriptor<T> descriptor) {
-        return descriptor.getInstallations();
-    }
-
-    private PrintStream logger(StepContext context) {
-        TaskListener l;
-        try {
-            l = context.get(TaskListener.class);
-            if (l != null) {
-                LOGGER.log(Level.FINEST, "JENKINS-34021: DurableTaskStep.Execution.listener present in {0}", context);
-            } else {
-                LOGGER.log(Level.WARNING, "JENKINS-34021: TaskListener not available upon request in {0}", context);
-                l = new LogTaskListener(LOGGER, Level.FINE);
-            }
-        } catch (Exception x) {
-            LOGGER.log(Level.FINE, "JENKINS-34021: could not get TaskListener in " + context, x);
-            l = new LogTaskListener(LOGGER, Level.FINE);
-        }
-        return l.getLogger();
-    }
-
-    public String getRelativePythonEnvDirectory(String pythonInstallation){
-        String postfix = pythonInstallation.replaceAll("/", "-")
-                .replaceFirst("[a-zA-Z]:\\\\", "")
-                .replaceAll("\\\\", "-");
-
-        if (!postfix.startsWith("-")) {
-            postfix = "-" + postfix;
-        }
-
-        return DEFAULT_DIR_PREFIX + postfix;
     }
 
 }

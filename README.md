@@ -26,8 +26,15 @@ This plugin provides 1 new Pipeline DSL method:
   <code>ToolInstallation</code> is matched, the location of that tool is used
   as the Python executable to generate the virtualenv.
   
-  If no <code>ToolInstallation</code> is matched, then the argument is treated
-  as the literal location of the Python executable to be used. This can be used
+  If no <code>ToolInstallation</code> is matched, we attempt to treat the argument as 
+  the location of an already existing virtualenv. A directory lookup is attempted with the
+  string argument, and if the argument is determined to point to a virtualenv, we go
+  ahead and use that. 
+  
+  * In order for this feature to work, the passed argument must end with the OS appropriate
+  file separator.
+  
+  Lastly, the argument is treated as the literal location of the Python executable to be used. This can be used
   to specify a specific Python installation (if the location is known beforehand),
   or to fallback and use the systems default Python installation.
   
@@ -45,15 +52,21 @@ This plugin provides 1 new Pipeline DSL method:
         // Uses the ShiningPanda registered Python installation named 'CPython-2.7'
         ...
     }</code></pre>  
+    
+  * <pre><code>withPythonEnv('/home/user/managed_virtualenv/'){
+        // Uses the virtualenv that already exists at /home/user/managed_virtualenv/
+        ...
+    }</code></pre>
 
 
 ## Warnings:
 
   * Earlier version of this plugin relied on using <code>pysh</code> and
   <code>pybat</code> steps to execute code within <code>withPythonEnv</code>
-  blocks. These steps are no longer necessary, and as such, are no longer
-  provided by the library. To migrate, simply remove the <code>py</code>
-  prefix from any such steps, and the command should work as intended
+  blocks. These steps are no longer necessary. To migrate, simply remove the <code>py</code>
+  prefix from any such steps, and the command should work as intended. The steps are
+  still included, and are copies of the <code>sh</code> and <code>bat</code> steps. Eventually,
+  the steps will be removed altogether.
 
 
   * Multibranch pipeline builds will occasionally generate very long path names

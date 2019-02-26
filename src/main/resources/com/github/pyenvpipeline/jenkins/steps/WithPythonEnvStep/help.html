@@ -1,19 +1,23 @@
 <p>
-    Wraps a block in a Python virtualenv. Any <code>pysh</code> or <code>pybat</code> steps executed within the block,
-    are executed using the virtualenv specified
+    Wraps a block in a Python virtualenv. <code>pysh</code> or <code>pybat</code> steps are deprecated, and are simply
+    copies or <code>sh</code> and <code>bat</code> respectively.
 </p>
 <p>Example:</p>
 <pre><code>withPythonEnv('python3') {
-    pysh 'python --version'
+    sh 'python --version'
 }</code></pre>
 <p>
     The argument supplied to <code>withPythonEnv</code> is the name of the virtualenv to make available to any
-    <code>pysh</code> or <code>pybat</code> steps called within the block.
+    <code>sh</code> or <code>bat</code> steps called within the block.
 </p>
 <p>
     Initially, <code>withPythonEnv</code> tries to match the string passed to it to a tool name. Currently, this means
     examining the installed tools for ShiningPanada. If the string matches an installed ShiningPanda Python tool
     instance, the virtualenv within that block is generated from that ShiningPanda tool.
+</p>
+<p>
+    Next, we attempt to match the string against an existing virtualenv directory. If we can find an existing virtualenv
+    directory, we utilize that for the <code>withPythonEnv</code> block.
 </p>
 <p>
     Otherwise, the text is treated "as-is". You can pass "python" to use the default Python installation of the node

@@ -25,6 +25,7 @@
 
 package com.github.pyenvpipeline.jenkins.steps;
 
+import com.github.pyenvpipeline.jenkins.ToolVirtualenv;
 import com.github.pyenvpipeline.jenkins.VirtualenvManager;
 import hudson.Functions;
 import hudson.tools.ToolDescriptor;
@@ -157,7 +158,7 @@ public class WithPythonEnvStepIntegrationTest {
         String workflowScript = "node { withPythonEnv('" + installation.getName() + "') {  } }";
 
         loggingRule = loggingRule.capture(300);
-        loggingRule.record(VirtualenvManager.class, Level.FINE);
+        loggingRule.record(ToolVirtualenv.class, Level.FINE);
         WorkflowJob job = j.jenkins.createProject(WorkflowJob.class, "p");
         job.setDefinition(new CpsFlowDefinition(workflowScript,
                 true));
