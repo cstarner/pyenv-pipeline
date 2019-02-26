@@ -54,7 +54,6 @@ public class VirtualenvManager implements Serializable {
             AbstractVirtualenv abstractVirtualenv = generateVirtualenv(withPythonEnvBlockArgument, stepContextWrapper);
 
             if (abstractVirtualenv != null) {
-                LOGGER.info("abstractVirtualenv: " + abstractVirtualenv.toString());
                 if (!stepContext.get(FilePath.class).child(abstractVirtualenv.getVirtualEnvPath()).exists()) {
 
                     if (abstractVirtualenv.canCreate()) {
@@ -102,15 +101,15 @@ public class VirtualenvManager implements Serializable {
     }
 
     private void createPythonEnv(StepContext stepContext, AbstractVirtualenv abstractVirtualenv) throws Exception{
-        ArgumentListBuilder command = getCreateVirtualEnvCommand(abstractVirtualenv);
+        ArgumentListBuilder command = getCreateVirtualEnvCommand(stepContext, abstractVirtualenv);
         runCommandList(command, stepContext);
     }
 
-    protected ArgumentListBuilder getCreateVirtualEnvCommand(AbstractVirtualenv abstractVirtualenv) throws Exception {
+    protected ArgumentListBuilder getCreateVirtualEnvCommand(StepContext context, AbstractVirtualenv abstractVirtualenv) throws Exception {
         String fullQualifiedDirectoryName = abstractVirtualenv.getVirtualEnvPath();
-        String pythonCommandPath = abstractVirtualenv.getPythonInstallationPath();
+        String commandPath = abstractVirtualenv.getPythonInstallationPath();
         LOGGER.info("Creating virtualenv at " + fullQualifiedDirectoryName + " using Python installation " +
-                "found at " + pythonCommandPath);
+                "found at " + commandPath);
 
         // Checking version of python
         ArgumentListBuilder versionChecker = new ArgumentListBuilder();
