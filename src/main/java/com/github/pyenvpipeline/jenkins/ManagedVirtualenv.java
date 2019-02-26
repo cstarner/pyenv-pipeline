@@ -3,8 +3,11 @@ package com.github.pyenvpipeline.jenkins;
 import hudson.FilePath;
 import java.util.Arrays;
 import java.util.List;
+import java.util.logging.Logger;
 
 public class ManagedVirtualenv extends AbstractVirtualenv {
+
+    private static final Logger LOGGER = Logger.getLogger(ManagedVirtualenv.class.getCanonicalName());
 
     public ManagedVirtualenv(String withPythonEnvBlockArgument, boolean isUnix) {
         super(withPythonEnvBlockArgument, isUnix);
@@ -30,11 +33,11 @@ public class ManagedVirtualenv extends AbstractVirtualenv {
     public static class Factory extends AbstractVirtualenvFactory<ManagedVirtualenv> {
 
         List<String> windowsVirtualenvContentPaths = Arrays.asList(
-           "Scripts\\activate.bat", "Scripts\\deactivate.bat", "Lib", "Include"
+           "Scripts\\activate.bat", "Scripts\\deactivate.bat"
         );
 
         List<String> unixVirtualenvContentPath = Arrays.asList(
-            "bin/activate", "bin/python", "include", "lib"
+            "bin/activate", "bin/python"
         );
 
         @Override
@@ -57,9 +60,13 @@ public class ManagedVirtualenv extends AbstractVirtualenv {
             boolean verified = true;
 
             for (String relativeFilePath : relativeFiles) {
-                verified = virtualenvDirectory.child(relativeFilePath).exists();
+                FilePath relative = virtualenvDirectory.child(relativeFilePath);
+                LOGGER.info("Checking for the existence of: " + relative.getRemote());
+
+                verified = relative.exists();
 
                 if (!verified) {
+                    LOGGER.info(relative.getRemote() + " not found");
                     break;
                 }
             }

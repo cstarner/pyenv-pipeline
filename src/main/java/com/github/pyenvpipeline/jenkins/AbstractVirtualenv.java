@@ -32,4 +32,9 @@ public abstract class AbstractVirtualenv implements Serializable {
 
     public abstract String getVirtualEnvPath();
     public abstract String getPythonInstallationPath();
+
+    @Override
+    public String toString() {
+        return getVirtualEnvPath() + " " + getPythonInstallationPath();
+    }
 }

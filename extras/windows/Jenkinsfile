@@ -32,6 +32,12 @@ pipeline {
                     bat "python --version"
                     bat "pip -V"
                 }
+
+                withPythonEnv('C:\\Program Files (x86)\\Jenkins\\managed_virtualenv\\') {
+                    // Test for ManagedVirtualenv
+                    bat "python --version"
+                    bat "pip -V"
+                }
             }
         }
     }

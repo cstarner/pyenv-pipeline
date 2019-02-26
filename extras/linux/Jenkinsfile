@@ -20,6 +20,12 @@ pipeline {
                     sh "python --version"
                     sh "pip -V"
                 }
+
+                withPythonEnv('/var/jenkins_home/managed_virtualenv/') {
+                    // Test for ManagedVirtualenv
+                    sh "python --version"
+                    sh "pip -V"
+                }
             }
         }
     }
