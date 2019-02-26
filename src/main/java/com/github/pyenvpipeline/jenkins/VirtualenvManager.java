@@ -4,10 +4,7 @@ import com.github.pyenvpipeline.jenkins.steps.WithPythonEnvStep;
 import hudson.*;
 import hudson.model.Run;
 import hudson.model.TaskListener;
-import hudson.tools.ToolDescriptor;
-import hudson.tools.ToolInstallation;
 import hudson.util.ArgumentListBuilder;
-import hudson.util.LogTaskListener;
 import org.jenkinsci.plugins.durabletask.BourneShellScript;
 import org.jenkinsci.plugins.durabletask.Controller;
 import org.jenkinsci.plugins.durabletask.DurableTask;
@@ -15,10 +12,8 @@ import org.jenkinsci.plugins.durabletask.WindowsBatchScript;
 import org.jenkinsci.plugins.workflow.steps.StepContext;
 
 import java.io.ByteArrayOutputStream;
-import java.io.PrintStream;
 import java.io.Serializable;
 import java.util.*;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
@@ -169,7 +164,7 @@ public class VirtualenvManager implements Serializable {
     }
 
     private BourneShellScript getVirtualenvUnixDurableTask(String directoryName) {
-        String script = ". " + directoryName + "/bin/activate; env";
+        String script = ". \"" + directoryName + "/bin/activate\"; env";
         return new BourneShellScript(script);
     }
 
