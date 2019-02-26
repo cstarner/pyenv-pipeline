@@ -1,7 +1,6 @@
 package com.github.pyenvpipeline.jenkins.steps;
 
 import com.github.pyenvpipeline.jenkins.containers.UnixPythonContainer;
-import hudson.model.Action;
 import hudson.model.Slave;
 import org.jenkinsci.plugins.workflow.actions.WorkspaceAction;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
@@ -12,15 +11,13 @@ import org.jenkinsci.plugins.workflow.graph.FlowNode;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.jenkinsci.test.acceptance.docker.DockerClassRule;
-import org.jenkinsci.test.acceptance.docker.DockerFixture;
-import org.junit.*;
+import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Rule;
+import org.junit.Test;
 import org.jvnet.hudson.test.JenkinsRule;
 
-import java.io.IOException;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 import static org.junit.Assert.assertTrue;
 
@@ -116,5 +113,10 @@ public class UnixWithPythonEnvStepIntergrationTest {
     @Test
     public void withPythonEnvIntegrationTestManagedVirtualenv() throws Exception {
         runTest("/var/managed_virtualenv/", "pythonOutput: 3.4.9");
+    }
+
+    @Test
+    public void withPythonEnvSpaces() throws Exception {
+        runTest("/var/managed virtualenv with spaces/", "pythonOutput: 3.5.6");
     }
 }
