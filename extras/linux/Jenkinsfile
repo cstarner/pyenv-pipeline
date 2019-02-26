@@ -8,10 +8,23 @@ pipeline {
             steps {
                 withPythonEnv('python') {
                     sh "python --version"
+                    sh "pip -V"
                 }
 
                 withPythonEnv('/usr/bin/python3') {
                     sh "python --version"
+                    sh "pip -V"
+                }
+
+                withPythonEnv('CPython-3.5') {
+                    sh "python --version"
+                    sh "pip -V"
+                }
+
+                withPythonEnv('/var/jenkins_home/managed_virtualenv/') {
+                    // Test for ManagedVirtualenv
+                    sh "python --version"
+                    sh "pip -V"
                 }
             }
         }
