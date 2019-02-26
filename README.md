@@ -63,9 +63,10 @@ This plugin provides 1 new Pipeline DSL method:
 
   * Earlier version of this plugin relied on using <code>pysh</code> and
   <code>pybat</code> steps to execute code within <code>withPythonEnv</code>
-  blocks. These steps are no longer necessary, and as such, are no longer
-  provided by the library. To migrate, simply remove the <code>py</code>
-  prefix from any such steps, and the command should work as intended
+  blocks. These steps are no longer necessary. To migrate, simply remove the <code>py</code>
+  prefix from any such steps, and the command should work as intended. The steps are
+  still included, and are copies of the <code>sh</code> and <code>bat</code> steps. Eventually,
+  the steps will be removed altogether.
 
 
   * Multibranch pipeline builds will occasionally generate very long path names
