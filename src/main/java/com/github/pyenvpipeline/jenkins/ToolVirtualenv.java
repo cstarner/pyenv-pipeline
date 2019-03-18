@@ -1,12 +1,17 @@
 package com.github.pyenvpipeline.jenkins;
 
 import hudson.DescriptorExtensionList;
+import hudson.EnvVars;
+import hudson.model.Node;
+import hudson.model.TaskListener;
 import hudson.tools.ToolDescriptor;
 import hudson.tools.ToolInstallation;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Logger;
+
+import org.jenkinsci.plugins.workflow.steps.StepContext;
 
 public class ToolVirtualenv extends WorkspaceVirtualenv {
 
@@ -62,10 +67,12 @@ public class ToolVirtualenv extends WorkspaceVirtualenv {
                 ToolInstallation[] installations = unboxToolInstallations(desc);
                 for (ToolInstallation installation : installations) {
                     if (installation.getName().equals(withPythonEnvArgument)) {
-                        String notification = "Matched ShiningPanda tool name: " + installation.getName();
+                        StepContext stepContext = stepContextWrapper.getStepContext();
+                        ToolInstallation resolvedInstallation = installation.translate(stepContext.get(Node.class), stepContext.get(EnvVars.class), stepContext.get(TaskListener.class));
+                        String notification = "Matched ShiningPanda tool name: " + resolvedInstallation.getName();
                         stepContextWrapper.logger().println(notification);
                         LOGGER.info(notification);
-                        installationHome =  installation.getHome();
+                        installationHome =  resolvedInstallation.getHome();
                         return true;
                     } else {
                         LOGGER.info("Skipping ToolInstallation: " + installation.getName());
