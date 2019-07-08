@@ -58,7 +58,17 @@ public class WorkspaceVirtualenv extends AbstractVirtualenv {
     @Override
     public String getVirtualEnvPath() {
         String pathSeparator = isUnix ? "/" : "\\";
-        return workspaceDirectory + pathSeparator + getRelativePythonEnvDirectory(withPythonEnvBlockArgument);
+
+        String result = workspaceDirectory;
+        String relativePythonEnvDirectory = getRelativePythonEnvDirectory(withPythonEnvBlockArgument);
+
+        if (!result.endsWith(pathSeparator) && !relativePythonEnvDirectory.startsWith(pathSeparator)) {
+            result += pathSeparator;
+        }
+
+        result += relativePythonEnvDirectory;
+
+        return result;
     }
 
     public static class Factory extends AbstractVirtualenvFactory<WorkspaceVirtualenv> {
